@@ -40,7 +40,7 @@ release, detection, travel time, speed, survival and lambda by release group.
 |---|---|---|
 | Skaha Lake | SKATAL | |
 | Osoyoos Lake | OSOYOL | |
-| Okanagan Lake (screw trap) | OKANR | Caught in a rotary screw trap; independent of the hatchery fish |
+| Okanagan Lake (screw trap) | OKANR | Rotary screw trap in the Okanagan River channel at Penticton; independent of the hatchery fish. PTAGIS lists the OKANR code near Tonasket, WA (48.7649, -119.4076), so the app places it at the Penticton site instead |
 | ONA Fish Hatchery - Equesis Creek | EQUESC | Fry from brood collection |
 | ONA Fish Hatchery - Mission Creek | MISS3C | Position read from MRRSiteList.csv |
 | ONA Fish Hatchery - Shingle Creek | SHINGC | |
@@ -49,8 +49,10 @@ No acronyms are shown in the app; codes appear here only for reference. Hatchery
 
 ## Checkpoints (upstream to downstream)
 
-Penticton (OKD, OKP), Okanagan Channel (OKC), Zosel Dam (ZSL), Rocky Reach Dam (RRJ, RRF),
-McNary Dam, John Day Dam, Bonneville Dam (B2J, BCC and other Bonneville codes), Columbia Estuary.
+Penticton (OKD, OKP), Okanagan Channel (OKC), Zosel Dam (ZSL), Lower Okanogan River (OKL), Wells Dam (WEA, WEJ, WEH),
+Rocky Reach Dam (RRJ, RRF), Rock Island Dam (RIA), Priest Rapids Dam (PRA, PRH), McNary Dam, John Day Dam,
+The Dalles Dam (TD1, TD2), Bonneville Dam (B2J, BCC and other Bonneville codes), Columbia Estuary.
+Each release site starts at the first checkpoint downstream of it: Equesis Creek, Mission Creek and the screw trap start at Penticton, Shingle Creek and Skaha Lake at Okanagan Channel, Osoyoos Lake at Zosel Dam. Survival chains are unchanged.
 Detection rates count only fish released upstream of each checkpoint.
 
 ## Survival tab (ported from the manual PitPro verify script)
@@ -70,6 +72,34 @@ Any csv or xlsx in `data\` with "Recapture" in its name (for example `2026 Recap
 - Display only: recaptures do not change detection rates, travel time or survival.
 - Follows the population and release-year selection when Go is pressed. Days at large uses the recorded release date, so a few fish recaptured before that date show a negative number.
 - Coordinates come from `MRRSiteList.csv` (Mission Creek now included).
+
+## River route (Migration tab)
+The spotlight fish and the base line on the Migration map follow a river route built into `app.R` (Okanagan Lake, Skaha Lake, Okanagan River, Osoyoos Lake, Okanogan River, Columbia River). It is hand-placed and approximate. For a more exact route, save `RiverPath.csv` in `data\` with columns `key`, `lat`, `lon`, ordered upstream to downstream. Use keys `cp:PEN`, `cp:OKC`, `cp:ZSL`, `cp:OKL`, `cp:WEL`, `cp:RRJ`, `cp:RIS`, `cp:PRD`, `cp:MCJ`, `cp:JDJ`, `cp:TDA`, `cp:BON`, `cp:EST` for the checkpoints and `rel:SKATAL`, `rel:OSOYOL`, `rel:OKANR` (place `rel:OKANR` just before `cp:PEN`) for those release sites; leave the key blank for other points. If a checkpoint key is missing, the file is ignored.
+
+## Sharing (public repository)
+The code is published at https://github.com/MacusOng/sockeye-tracker. The PTAGIS data files are not: `data/`, `outputs/` and all csv and xlsx files are excluded by `.gitignore`. Other members put their own exports in a `data/` folder next to `App_Dev/` and run the app as described above.
+
+## Website (live dashboard)
+Live site: https://macus-ong.shinyapps.io/sockeye-tracker/
+
+GitHub cannot run a Shiny app, so the live copy is hosted on shinyapps.io and the GitHub page links to it. The website is a snapshot: it changes only when you publish again, so `App_Dev` can keep changing in the background.
+
+One-time setup:
+1. Create a free account at https://www.shinyapps.io (sign in with the ONA or a personal address) and choose an account name; it becomes the address, `https://ACCOUNTNAME.shinyapps.io/sockeye-tracker/`.
+2. In R: `install.packages("rsconnect")`.
+3. On shinyapps.io open the account name menu, then Tokens, then Show, and copy the `rsconnect::setAccountInfo(...)` line into R and run it. This needs no admin rights.
+4. Make a folder `data_public\` next to `App_Dev\` and copy in only the data files approved for public viewing (the same kinds of files as in `data\`; `InterrogationSiteList_2026.csv` and `MRRSiteList.csv` are needed for correct site positions). It is excluded from Git like all csv and xlsx files.
+
+Publish (and later republish) from the project folder:
+
+    source("App_Dev/tools/deploy_shinyapps.R")
+
+The script shows the version and the data files, asks for confirmation, and uploads only `app.R` and the files in `data_public\`. Then set the address as the Website on the GitHub repository page (gear icon next to About).
+
+The free plan allows 5 apps and 25 active hours per month, has no password option, and shows "Powered by RStudio". Anyone with the link can see the data in `data_public\`; only publish files that are open to the public.
+
+## Photos tab
+Photos are read live from the public GitHub repository set by `PHOTO_REPO` at the top of `app.R` (default `MacusOng/sockeye-tracker-photos`). Upload photos there; nothing is stored in the dashboard. Folders in that repository become albums and captions come from the file names. The tab needs an internet connection.
 
 ## Exports
 
