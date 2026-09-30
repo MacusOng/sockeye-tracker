@@ -34,7 +34,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.12.0"
+APP_VERSION      <- "0.12.1"
 APP_TIMEZONE     <- "Etc/GMT+7"                       # = UTC-7 (GMT-7)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -85,7 +85,7 @@ POP_CHOICES <- list(
   "Lakes and screw trap"           = c("Skaha Lake" = "SKATAL", "Osoyoos Lake" = "OSOYOL",
                                        "Okanagan Lake (screw trap)" = "OKANR"),
   "ONA Fish Hatchery release sites" = c("Equesis Creek" = "EQUESC", "Mission Creek" = "MISS3C",
-                                        "Shingle Creek" = "SHINGC")
+                                       "Shingle Creek" = "SHINGC")
 )
 
 # Downstream checkpoints, upstream -> downstream (rkm = river km from the
@@ -170,11 +170,11 @@ find_all_datasets <- function(data_dir = DATA_DIR) {
   files <- files[grepl("pitpro", basename(files), ignore.case = TRUE) &
                    !grepl("^~\\$", basename(files))]
   if (length(files) == 0) return(data.frame())
-  
+
   months <- c(january = 1, february = 2, march = 3, april = 4, may = 5, june = 6,
               july = 7, august = 8, september = 9, october = 10, november = 11, december = 12)
   pat <- sprintf("(%s)\\s*([0-9]{1,2})\\s+(20[0-9]{2})", paste(names(months), collapse = "|"))
-  
+
   parse_one <- function(f) {
     bn <- tolower(tools::file_path_sans_ext(basename(f)))
     z  <- regmatches(bn, regexec(pat, bn))[[1]]
@@ -187,7 +187,7 @@ find_all_datasets <- function(data_dir = DATA_DIR) {
   }
   info <- do.call(rbind, lapply(files, parse_one))
   info <- info[!is.na(info$type), , drop = FALSE]
-  
+
   out <- list()
   for (k in unique(info$key)) {
     sub <- info[info$key == k, ]
@@ -230,12 +230,12 @@ load_pit_pair <- function(tag_path, obs_path, species = "4") {
   names(obs) <- c("pit", "site", "obsdt", "antenna")
   tag[] <- lapply(tag, trimws)
   obs[] <- lapply(obs, trimws)
-  
+
   tag <- tag[!is.na(tag$pit) & tag$pit != "" & tag$species == species, , drop = FALSE]
   tag <- tag[!duplicated(tag$pit), , drop = FALSE]
   tag$reldt_posix <- lubridate::ymd_hms(tag$reldt, tz = "UTC", quiet = TRUE)
   obs$obsdt_posix <- lubridate::ymd_hms(obs$obsdt, tz = "UTC", quiet = TRUE)
-  
+
   obs <- obs[obs$pit %in% tag$pit, , drop = FALSE]
   jr  <- setNames(as.numeric(tag$reldt_posix), tag$pit)
   jo  <- as.numeric(obs$obsdt_posix)
@@ -252,7 +252,7 @@ get_bundle <- function(data_dir = DATA_DIR) {
   key <- paste(ds$tag_file, ds$obs_file,
                file.info(ds$tag_file)$mtime, file.info(ds$obs_file)$mtime, collapse = "|")
   if (identical(.cache$key, key)) return(.cache$bundle)
-  
+
   tags <- list(); obss <- list(); log <- character()
   for (i in seq_len(nrow(ds))) {
     ld <- tryCatch(suppressMessages(load_pit_pair(ds$tag_file[i], ds$obs_file[i])),
@@ -265,19 +265,19 @@ get_bundle <- function(data_dir = DATA_DIR) {
                           format(ds$date[i]), fmt_int(nrow(ld$tag)), fmt_int(nrow(ld$obs))))
   }
   if (length(tags) == 0) return(NULL)
-  
+
   tag <- do.call(rbind, tags)
   tag <- tag[!duplicated(tag$pit), , drop = FALSE]
   obs <- do.call(rbind, obss)
   obs <- obs[!duplicated(obs[, c("pit", "site", "obsdt")]), , drop = FALSE]
   obs <- obs[obs$pit %in% tag$pit, , drop = FALSE]
-  
+
   k <- match(tag$relsite, RELEASE$code)
   tag$year       <- lubridate::year(tag$reldt_posix)
   tag$site_label <- ifelse(is.na(k), "Other release site", RELEASE$label[k])
   tag$site_full  <- ifelse(is.na(k), "Other release site", RELEASE$full[k])
   tag$start_idx  <- ifelse(is.na(k), 1, RELEASE$start_idx[k])
-  
+
   obs$cp <- unname(SITE_TO_CP[obs$site])
   cpobs  <- obs[!is.na(obs$cp) & !is.na(obs$obsdt_posix), , drop = FALSE]
   cp <- cpobs %>%
@@ -289,7 +289,7 @@ get_bundle <- function(data_dir = DATA_DIR) {
     group_by(pit, site) %>% summarise(first_det = min(obsdt_posix), .groups = "drop") %>% as.data.frame()
   obs_n <- as.data.frame(table(pit = obs$pit), stringsAsFactors = FALSE)
   names(obs_n)[2] <- "n_obs"
-  
+
   b <- list(tag = tag, cp = cp, site_first = site_first, obs_n = obs_n, datasets = ds, log = log,
             export_date = max(ds$date), n_obs = nrow(obs))
   message("Data loaded:\n  ", paste(log, collapse = "\n  "))
@@ -501,7 +501,7 @@ build_river <- function(data_dir = DATA_DIR) {
     if (startsWith(k, "rel:")) { j <- match(sub("rel:", "", k), RELEASE$code);  if (!is.na(j)) { m$lat[i] <- RELEASE$lat[j];     m$lon[i] <- RELEASE$lon[j] } }
   }
   km <- function(la, lo) { n <- length(la); if (n < 2) return(0)
-  dy <- diff(la) * 111.2; dx <- diff(lo) * 111.2 * cos(mean(la) * pi / 180); c(0, cumsum(sqrt(dx^2 + dy^2))) }
+    dy <- diff(la) * 111.2; dx <- diff(lo) * 111.2 * cos(mean(la) * pi / 180); c(0, cumsum(sqrt(dx^2 + dy^2))) }
   m$km <- km(m$lat, m$lon)
   list(master = m)
 }
@@ -512,9 +512,9 @@ river_route <- function(relcode, to_cp = "EST") {
   m <- RIVER$master
   b <- RIVER_BRANCH_DEF[[relcode]]
   if (!is.null(b)) { j <- match(b$join[1], m$key); start <- j
-  pre <- data.frame(key = "", lat = b$lat, lon = b$lon, stringsAsFactors = FALSE)
+    pre <- data.frame(key = "", lat = b$lat, lon = b$lon, stringsAsFactors = FALSE)
   } else { start <- match(paste0("rel:", relcode), m$key)
-  pre <- NULL }
+    pre <- NULL }
   end <- match(paste0("cp:", to_cp), m$key)
   if (is.na(start) || is.na(end) || end < start) return(NULL)
   r <- rbind(pre, m[start:end, c("key", "lat", "lon")])
@@ -531,7 +531,7 @@ river_route <- function(relcode, to_cp = "EST") {
 # image in it. Folders in the repo become albums. Change PHOTO_REPO to point
 # somewhere else, or set the environment variable PHOTO_REPO.
 # -----------------------------------------------------------------------------
-PHOTO_REPO <- Sys.getenv("PHOTO_REPO", "macusong/sockeye-tracker-photos")
+PHOTO_REPO <- Sys.getenv("PHOTO_REPO", "MacusOng/sockeye-tracker-photos")
 PHOTO_EXT  <- "\\.(jpe?g|png|gif|webp)$"
 
 photo_url <- function(repo, path) {
@@ -680,7 +680,7 @@ fit_cjs <- function(H, site_names) {
   cnt <- as.integer(tabH)
   last_occ <- apply(hist_mat, 1, function(h) { w <- which(h == 1); if (length(w)) max(w) else 0L })
   npar <- if (Kd == 1) 1 else 2 * (Kd - 1) + 1
-  
+
   negll <- function(theta) {
     if (Kd == 1) { phi <- numeric(0); p <- numeric(0); lambda <- plogis(theta[1]) }
     else {
@@ -704,7 +704,7 @@ fit_cjs <- function(H, site_names) {
     }
     -ll
   }
-  
+
   opt <- NULL
   for (seed in c(0, 0.5, -0.5, 1, -1, 2, -2)) {       # several starts: keep the best optimum
     r <- tryCatch(optim(rep(seed, npar), negll, method = "BFGS", hessian = TRUE,
@@ -716,7 +716,7 @@ fit_cjs <- function(H, site_names) {
   J   <- diag(est * (1 - est), npar)
   Vth <- tryCatch(solve(opt$hessian), error = function(e) matrix(NA_real_, npar, npar))
   se  <- sqrt(pmax(diag(J %*% Vth %*% t(J)), 0))
-  
+
   arrow <- "to"
   if (Kd == 1) {
     lab  <- paste0("Lambda: survival x detection at ", site_names[1]); type <- "Lambda"
@@ -748,13 +748,13 @@ survival_group <- function(tg, sf, chain) {
     if (nrow(ot)) { f <- tapply(as.numeric(ot$first_det), ot$pit, min); ft[names(f), j] <- f }
   }
   TT <- (ft - rel) / 86400
-  
+
   rows <- list()
   add <- function(reach, x) {
     a <- arith_stats(x); h <- harm_stats(x)
     rows[[length(rows) + 1]] <<- data.frame(reach = reach, n = as.integer(a["n"]),
-                                            arith_mean = unname(a["mean"]), arith_sd = unname(a["sd"]),
-                                            harm_mean = unname(h["hm"]), harm_se = unname(h["se"]), stringsAsFactors = FALSE)
+      arith_mean = unname(a["mean"]), arith_sd = unname(a["sd"]),
+      harm_mean = unname(h["hm"]), harm_se = unname(h["se"]), stringsAsFactors = FALSE)
   }
   for (j in seq_along(nm)) add(paste0("Release to ", nm[j]), TT[, j])
   if (length(nm) >= 2) {
@@ -774,7 +774,7 @@ survival_group <- function(tg, sf, chain) {
 
 plot_theme <- function(dark = FALSE) {
   base <- theme_minimal(base_size = 13) + theme(legend.position = "bottom",
-                                                plot.title = element_text(face = "bold"))
+                                                 plot.title = element_text(face = "bold"))
   if (!dark) return(base + theme(plot.background = element_rect(fill = "white", colour = NA)))
   base + theme(plot.background  = element_rect(fill = "#23272b", colour = NA),
                panel.background = element_rect(fill = "#23272b", colour = NA),
@@ -889,7 +889,7 @@ bar_list <- function(labels, values, fills, right, max_val = NULL, sub = NULL) {
     div(class = "barrow",
         div(class = "bl", labels[i]),
         div(class = "bt", div(class = "bf", style = sprintf("width:%.1f%%;background:%s;",
-                                                            max(0.4, 100 * values[i] / mx), fills[i]))),
+                                                             max(0.4, 100 * values[i] / mx), fills[i]))),
         div(class = "bv", right[i], if (!is.null(sub)) span(class = "bs", sub[i])))))
 }
 
@@ -1014,13 +1014,13 @@ ui <- fluidPage(
   useShinyjs(),
   tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
-  
+
   div(class = "topbar",
       div(class = "brand", div(class = "logo"),
           div(h1("Let's Follow the Sockeye"),
               p("Okanagan fry and smolt outmigration tracker"))),
       div(class = "ver", HTML(sprintf("v%s<br>built %s GMT-7", APP_VERSION, APP_VERSION_DATE)))),
-  
+
   div(class = "layout",
       # ---------------- left pane ----------------
       tags$aside(class = "side",
@@ -1038,125 +1038,125 @@ ui <- fluidPage(
                      "Pick a population, years and dates, then press ", tags$b("Go"),
                      " to apply. Go also checks the data folder for newer exports."),
                  uiOutput("side_summary")),
-      
+
       # ---------------- pages ----------------
       tags$main(
         tabsetPanel(id = "tabs", type = "pills",
-                    
-                    tabPanel("Overview",
-                             uiOutput("hero"),
-                             uiOutput("tiles"),
-                             card("Tagged sockeye by year", uiOutput("year_bars")),
-                             div(class = "grid2",
-                                 card("Where fish were released", uiOutput("site_bars")),
-                                 card("Season survival funnel",
-                                      div(class = "sub", "Share of fish detected at each checkpoint, counting only fish released upstream of it."),
-                                      uiOutput("funnel_overview")))),
-                    
-                    tabPanel("Explore",
-                             card("Explore the records",
-                                  div(class = "sub", "Every tagged fish in the current selection. Search by tag, release location or year."),
-                                  DTOutput("tbl_fish"),
-                                  downloadButton("dl_fish", "Export table (CSV)", class = "btn-default"))),
-                    
-                    tabPanel("Charts",
-                             card("Fish released", plotOutput("p_year", height = "340px"),
-                                  downloadButton("dl_p_year", "Export plot (PNG)", class = "btn-default")),
-                             card("Detection rate",
-                                  plotOutput("p_rate", height = "400px"),
-                                  downloadButton("dl_p_rate", "Export plot (PNG)", class = "btn-default"),
-                                  tableOutput("t_rate"),
-                                  downloadButton("dl_t_rate", "Export table (CSV)", class = "btn-default")),
-                             card("Fish detected", plotOutput("p_count", height = "380px"),
-                                  downloadButton("dl_p_count", "Export plot (PNG)", class = "btn-default")),
-                             card("Travel time", plotOutput("p_travel", height = "520px"),
-                                  downloadButton("dl_p_travel", "Export plot (PNG)", class = "btn-default"),
-                                  tableOutput("t_travel"),
-                                  downloadButton("dl_t_travel", "Export table (CSV)", class = "btn-default")),
-                             card("Detections through the season", plotOutput("p_weekly", height = "360px"),
-                                  downloadButton("dl_p_weekly", "Export plot (PNG)", class = "btn-default"))),
-                    
-                    tabPanel("Journeys",
-                             card("Fish journeys",
-                                  uiOutput("journey_intro"),
-                                  uiOutput("journey_detail"),
-                                  DTOutput("tbl_journeys"),
-                                  downloadButton("dl_journeys", "Export table (CSV)", class = "btn-default"))),
-                    
-                    tabPanel("Migration",
-                             card("Watch the migration",
-                                  div(class = "sub", "Press play or drag the date to see fish reach each checkpoint over the season."),
-                                  div(class = "mig-controls",
-                                      uiOutput("mig_slider_ui"),
-                                      selectInput("mig_speed", "Speed",
-                                                  c("1 day per step" = 1, "3 days per step" = 3, "1 week per step" = 7)))),
-                             card("Season survival funnel", uiOutput("funnel_mig")),
-                             uiOutput("mig_tiles"),
-                             div(class = "grid2", style = "grid-template-columns:2fr 1fr;",
-                                 card("Migration map", leafletOutput("mig_map", height = "480px"), class = ""),
-                                 div(class = "spot",
-                                     div(class = "spot-sel",
-                                         selectInput("spot_site", "Release site", c("Any release site" = "any"), selectize = FALSE, width = "100%"),
-                                         selectInput("spot_dest", "Final destination", c("Any final destination" = "any"), selectize = FALSE, width = "100%")),
-                                     uiOutput("spot"),
-                                     uiOutput("spot_slider_ui"),
-                                     actionButton("spot_any", "Another fish"),
-                                     div(class = "spot-key",
-                                         div(span(class = "sk sk-dot"), "Fish position on the river"),
-                                         div(span(class = "sk sk-ring"), "Site where the fish will be detected"),
-                                         div(span(class = "sk sk-fill"), "Site where it has been detected")),
-                                     div(class = "spot-note", "The play button here follows this fish only, from release to its last detection. The season date above is separate.")))),
-                    
-                    tabPanel("Recaptures",
-                             card("Recaptured fish",
-                                  div(class = "sub", "Fish that were caught again after release and let go a second time. Shown for reference only; they do not change detection rates, travel time or survival."),
-                                  uiOutput("recap_tiles"),
-                                  uiOutput("recap_by_site")),
-                             card("Where they were caught again",
-                                  div(class = "sub", "Each line runs from the release location to the place the fish was caught again."),
-                                  leafletOutput("recap_map", height = "520px")),
-                             card("Recapture list",
-                                  DTOutput("tbl_recap"),
-                                  downloadButton("dl_recap", "Export table (CSV)", class = "btn-default"))),
-                    
-                    tabPanel("Speed",
-                             card("Who is moving fastest?",
-                                  div(class = "sub", "Distance covered over time, for every fish detected at two or more checkpoints."),
-                                  uiOutput("speed_tiles"),
-                                  radioButtons("speed_dir", NULL, c("Fastest" = "fast", "Slowest" = "slow"), inline = TRUE),
-                                  uiOutput("speed_list"),
-                                  downloadButton("dl_speed", "Export table (CSV)", class = "btn-default")),
-                             card("Median pace by release location", uiOutput("speed_by_site"))),
-                    
-                    tabPanel("Survival",
-                             card("Survival and travel time",
-                                  div(class = "sub", "Travel time (arithmetic and harmonic means), survival between checkpoints, and lambda, using the Cormack-Jolly-Seber model on each release group. The Skaha Lake, Osoyoos Lake and Okanagan Lake chain is Release, Rocky Reach Dam, Bonneville Dam. The ONA Fish Hatchery chain adds Penticton and the Okanagan Channel."),
-                                  radioButtons("surv_mode", NULL, inline = TRUE,
-                                               c("Each release year separately" = "year", "Selected years combined" = "all"))),
-                             card("Travel time (days)",
-                                  plotOutput("p_tt_means", height = "auto"),
-                                  downloadButton("dl_p_tt_means", "Export plot (PNG)", class = "btn-default"),
-                                  tableOutput("t_tt_means"),
-                                  downloadButton("dl_t_tt_means", "Export table (CSV)", class = "btn-default"),
-                                  uiOutput("surv_omitted")),
-                             card("Survival and lambda",
-                                  plotOutput("p_surv", height = "auto"),
-                                  downloadButton("dl_p_surv", "Export plot (PNG)", class = "btn-default"),
-                                  tableOutput("t_surv"),
-                                  downloadButton("dl_t_surv", "Export table (CSV)", class = "btn-default"),
-                                  div(class = "small-note", style = "font-size:12px;",
-                                      "Survival at the last checkpoint and detection there cannot be separated on a single release, so only their product, lambda, is reported. Estimates near 0% or 100%, or with a large standard error, are flagged as unstable: they reflect too few detections, not a real value.")),
-                             card("Fish detected at each modeled checkpoint", tableOutput("t_surv_det"))),
-                    
-                    tabPanel("Photos",
-                             card("Photos",
-                                  div(class = "photo-tools",
-                                      selectInput("photo_album", "Album", c("All photos" = "all"), width = "220px"),
-                                      textInput("photo_q", "Search", placeholder = "Type part of a name", width = "260px"),
-                                      actionButton("photo_refresh", "Refresh photos", icon = icon("rotate"), class = "btn-default")),
-                                  uiOutput("photo_count"),
-                                  uiOutput("photo_grid"),
-                                  uiOutput("photo_more")))
+
+          tabPanel("Overview",
+                   uiOutput("hero"),
+                   uiOutput("tiles"),
+                   card("Tagged sockeye by year", uiOutput("year_bars")),
+                   div(class = "grid2",
+                       card("Where fish were released", uiOutput("site_bars")),
+                       card("Season survival funnel",
+                            div(class = "sub", "Share of fish detected at each checkpoint, counting only fish released upstream of it."),
+                            uiOutput("funnel_overview")))),
+
+          tabPanel("Explore",
+                   card("Explore the records",
+                        div(class = "sub", "Every tagged fish in the current selection. Search by tag, release location or year."),
+                        DTOutput("tbl_fish"),
+                        downloadButton("dl_fish", "Export table (CSV)", class = "btn-default"))),
+
+          tabPanel("Charts",
+                   card("Fish released", plotOutput("p_year", height = "340px"),
+                        downloadButton("dl_p_year", "Export plot (PNG)", class = "btn-default")),
+                   card("Detection rate",
+                        plotOutput("p_rate", height = "400px"),
+                        downloadButton("dl_p_rate", "Export plot (PNG)", class = "btn-default"),
+                        tableOutput("t_rate"),
+                        downloadButton("dl_t_rate", "Export table (CSV)", class = "btn-default")),
+                   card("Fish detected", plotOutput("p_count", height = "380px"),
+                        downloadButton("dl_p_count", "Export plot (PNG)", class = "btn-default")),
+                   card("Travel time", plotOutput("p_travel", height = "520px"),
+                        downloadButton("dl_p_travel", "Export plot (PNG)", class = "btn-default"),
+                        tableOutput("t_travel"),
+                        downloadButton("dl_t_travel", "Export table (CSV)", class = "btn-default")),
+                   card("Detections through the season", plotOutput("p_weekly", height = "360px"),
+                        downloadButton("dl_p_weekly", "Export plot (PNG)", class = "btn-default"))),
+
+          tabPanel("Journeys",
+                   card("Fish journeys",
+                        uiOutput("journey_intro"),
+                        uiOutput("journey_detail"),
+                        DTOutput("tbl_journeys"),
+                        downloadButton("dl_journeys", "Export table (CSV)", class = "btn-default"))),
+
+          tabPanel("Migration",
+                   card("Watch the migration",
+                         div(class = "sub", "Press play or drag the date to see fish reach each checkpoint over the season."),
+                         div(class = "mig-controls",
+                             uiOutput("mig_slider_ui"),
+                             selectInput("mig_speed", "Speed",
+                                         c("1 day per step" = 1, "3 days per step" = 3, "1 week per step" = 7)))),
+                   card("Season survival funnel", uiOutput("funnel_mig")),
+                   uiOutput("mig_tiles"),
+                   div(class = "grid2", style = "grid-template-columns:2fr 1fr;",
+                       card("Migration map", leafletOutput("mig_map", height = "480px"), class = ""),
+                       div(class = "spot",
+                           div(class = "spot-sel",
+                               selectInput("spot_site", "Release site", c("Any release site" = "any"), selectize = FALSE, width = "100%"),
+                               selectInput("spot_dest", "Final destination", c("Any final destination" = "any"), selectize = FALSE, width = "100%")),
+                           uiOutput("spot"),
+                           uiOutput("spot_slider_ui"),
+                           actionButton("spot_any", "Another fish"),
+                           div(class = "spot-key",
+                               div(span(class = "sk sk-dot"), "Fish position on the river"),
+                               div(span(class = "sk sk-ring"), "Site where the fish will be detected"),
+                               div(span(class = "sk sk-fill"), "Site where it has been detected")),
+                           div(class = "spot-note", "The play button here follows this fish only, from release to its last detection. The season date above is separate.")))),
+
+          tabPanel("Recaptures",
+                   card("Recaptured fish",
+                        div(class = "sub", "Fish that were caught again after release and let go a second time. Shown for reference only; they do not change detection rates, travel time or survival."),
+                        uiOutput("recap_tiles"),
+                        uiOutput("recap_by_site")),
+                   card("Where they were caught again",
+                        div(class = "sub", "Each line runs from the release location to the place the fish was caught again."),
+                        leafletOutput("recap_map", height = "520px")),
+                   card("Recapture list",
+                        DTOutput("tbl_recap"),
+                        downloadButton("dl_recap", "Export table (CSV)", class = "btn-default"))),
+
+          tabPanel("Speed",
+                   card("Who is moving fastest?",
+                        div(class = "sub", "Distance covered over time, for every fish detected at two or more checkpoints."),
+                        uiOutput("speed_tiles"),
+                        radioButtons("speed_dir", NULL, c("Fastest" = "fast", "Slowest" = "slow"), inline = TRUE),
+                        uiOutput("speed_list"),
+                        downloadButton("dl_speed", "Export table (CSV)", class = "btn-default")),
+                   card("Median pace by release location", uiOutput("speed_by_site"))),
+
+          tabPanel("Survival",
+                   card("Survival and travel time",
+                        div(class = "sub", "Travel time (arithmetic and harmonic means), survival between checkpoints, and lambda, using the Cormack-Jolly-Seber model on each release group. The Skaha Lake, Osoyoos Lake and Okanagan Lake chain is Release, Rocky Reach Dam, Bonneville Dam. The ONA Fish Hatchery chain adds Penticton and the Okanagan Channel."),
+                        radioButtons("surv_mode", NULL, inline = TRUE,
+                                     c("Each release year separately" = "year", "Selected years combined" = "all"))),
+                   card("Travel time (days)",
+                        plotOutput("p_tt_means", height = "auto"),
+                        downloadButton("dl_p_tt_means", "Export plot (PNG)", class = "btn-default"),
+                        tableOutput("t_tt_means"),
+                        downloadButton("dl_t_tt_means", "Export table (CSV)", class = "btn-default"),
+                        uiOutput("surv_omitted")),
+                   card("Survival and lambda",
+                        plotOutput("p_surv", height = "auto"),
+                        downloadButton("dl_p_surv", "Export plot (PNG)", class = "btn-default"),
+                        tableOutput("t_surv"),
+                        downloadButton("dl_t_surv", "Export table (CSV)", class = "btn-default"),
+                        div(class = "small-note", style = "font-size:12px;",
+                            "Survival at the last checkpoint and detection there cannot be separated on a single release, so only their product, lambda, is reported. Estimates near 0% or 100%, or with a large standard error, are flagged as unstable: they reflect too few detections, not a real value.")),
+                   card("Fish detected at each modeled checkpoint", tableOutput("t_surv_det"))),
+
+          tabPanel("Photos",
+                   card("Photos",
+                        div(class = "photo-tools",
+                            selectInput("photo_album", "Album", c("All photos" = "all"), width = "220px"),
+                            textInput("photo_q", "Search", placeholder = "Type part of a name", width = "260px"),
+                            actionButton("photo_refresh", "Refresh photos", icon = icon("rotate"), class = "btn-default")),
+                        uiOutput("photo_count"),
+                        uiOutput("photo_grid"),
+                        uiOutput("photo_more")))
         )
       )
   )
@@ -1167,7 +1167,7 @@ ui <- fluidPage(
 # =============================================================================
 
 server <- function(input, output, session) {
-  
+
   # ---------------- theme ----------------
   dark <- reactiveVal(FALSE)
   observeEvent(input$theme, dark(!dark()))
@@ -1177,7 +1177,7 @@ server <- function(input, output, session) {
                        label = if (dark()) "Light mode" else "Dark mode",
                        icon  = icon(if (dark()) "sun" else "moon"))
   })
-  
+
   # ---------------- data (reload on Go if files changed) ----------------
   raw <- reactiveVal(NULL)
   do_load <- function() {
@@ -1190,7 +1190,7 @@ server <- function(input, output, session) {
   }
   observeEvent(TRUE, do_load(), once = TRUE)
   observeEvent(input$go, do_load(), ignoreInit = TRUE)
-  
+
   output$year_ui <- renderUI({
     b <- raw(); req(b)
     yrs <- sort(unique(b$tag$year[!is.na(b$tag$year)]), decreasing = TRUE)
@@ -1199,7 +1199,7 @@ server <- function(input, output, session) {
                 selected = if (is.null(keep)) as.character(yrs) else intersect(keep, as.character(yrs)),
                 multiple = TRUE, width = "100%")
   })
-  
+
   # free date range (not limited to the dates in the data); starts at the span of the data
   data_span <- reactive({
     b <- raw(); req(b); rc <- recap_all()
@@ -1213,13 +1213,13 @@ server <- function(input, output, session) {
     dateRangeInput("dates", NULL, start = st, end = en, min = as.Date("2000-01-01"),
                    max = Sys.Date() + 365, format = "yyyy-mm-dd", separator = " to ", width = "100%")
   })
-  
+
   # ---------------- selection applied only when Go is pressed ----------------
   dates_ready <- reactiveVal(FALSE)
   observeEvent(input$dates, dates_ready(TRUE), once = TRUE)
   sel <- eventReactive(list(input$go, dates_ready()),
                        list(pop = input$pop, years = input$years, dates = input$dates), ignoreNULL = FALSE)
-  
+
   output$pending <- renderUI({
     s <- sel(); b <- raw(); req(b)
     all_y <- as.character(unique(b$tag$year[!is.na(b$tag$year)]))
@@ -1228,13 +1228,13 @@ server <- function(input, output, session) {
         !identical(as.character(input$dates), as.character(s$dates)))
       div(class = "hint", "Selection changed - press Go to apply.")
   })
-  
+
   pop_name <- reactive({
     s <- sel()
     if (identical(s$pop, "all")) "All populations"
     else { k <- match(s$pop, RELEASE$code); if (is.na(k)) s$pop else RELEASE$full[k] }
   })
-  
+
   tags_f <- reactive({
     b <- raw(); req(b); s <- sel()
     tg <- b$tag
@@ -1249,7 +1249,7 @@ server <- function(input, output, session) {
   funnel_f <- reactive({ funnel_from(rate_f()) })
   fish_f   <- reactive({ b <- raw(); req(b); fish_summary(tags_f(), cp_f(), b$obs_n) })
   speed_f  <- reactive({ speed_from(cp_f(), tags_f()) })
-  
+
   # ---------------- Overview ----------------
   output$hero <- renderUI({
     tg <- tags_f(); cp <- cp_f()
@@ -1266,7 +1266,7 @@ server <- function(input, output, session) {
                   fmt_date(d1), fmt_date(d2), n_sites, if (n_sites == 1) "" else "s")),
         div(class = "big", fmt_int(n_rec)), div(class = "bigl", "detection records on file"))
   })
-  
+
   output$tiles <- renderUI({
     tg <- tags_f(); cp <- cp_f(); b <- raw(); req(b)
     n_det <- length(unique(cp$pit))
@@ -1278,7 +1278,7 @@ server <- function(input, output, session) {
         stat_tile("Checkpoints reached", length(unique(cp$cp)), sprintf("of %d", nrow(CHECKPOINTS)), "gold"),
         stat_tile("Latest data export", format(b$export_date, "%b %d, %Y")))
   })
-  
+
   output$year_bars <- renderUI({
     tg <- tags_f(); if (nrow(tg) == 0) return(div(class = "empty", "No fish in this selection."))
     d <- tg %>% count(year, site_full)
@@ -1300,14 +1300,14 @@ server <- function(input, output, session) {
         div(class = "legend", lapply(used, function(u)
           span(tags$i(style = paste0("background:", POP_FILL[u])), u))))
   })
-  
+
   output$site_bars <- renderUI({
     tg <- tags_f(); if (nrow(tg) == 0) return(div(class = "empty", "No fish in this selection."))
     d <- tg %>% count(site_full) %>% arrange(desc(n))
     bar_list(d$site_full, d$n, unname(POP_FILL[d$site_full]), fmt_int(d$n),
              sub = sprintf("%.0f%%", 100 * d$n / sum(d$n)))
   })
-  
+
   funnel_ui <- function() {
     f <- funnel_f()
     if (nrow(f) == 0) return(div(class = "empty", "No detections in this selection."))
@@ -1317,7 +1317,7 @@ server <- function(input, output, session) {
   }
   output$funnel_overview <- renderUI(funnel_ui())
   output$funnel_mig      <- renderUI(funnel_ui())
-  
+
   # ---------------- Explore ----------------
   fish_display <- reactive({
     f <- fish_f()
@@ -1331,7 +1331,7 @@ server <- function(input, output, session) {
   })
   output$tbl_fish <- renderDT(datatable(fish_display(), rownames = FALSE, filter = "top", selection = "single",
                                         options = list(pageLength = 15, scrollX = FALSE, autoWidth = FALSE)))
-  
+
   # ---------------- Charts ----------------
   bg_t <- "transparent"
   output$p_year   <- renderPlot({ req(nrow(tags_f()) > 0); gg_release_year(tags_f(), dark()) }, bg = bg_t)
@@ -1339,7 +1339,7 @@ server <- function(input, output, session) {
   output$p_count  <- renderPlot({ req(nrow(rate_f()) > 0); gg_count(rate_f(), dark()) }, bg = bg_t)
   output$p_travel <- renderPlot({ req(nrow(cp_f()) > 0); gg_travel(cp_f(), tags_f(), dark()) }, bg = bg_t)
   output$p_weekly <- renderPlot({ req(nrow(cp_f()) > 0); gg_weekly(cp_f(), dark()) }, bg = bg_t)
-  
+
   rate_tbl <- reactive({
     r <- rate_f(); if (nrow(r) == 0) return(data.frame())
     data.frame(Checkpoint = as.character(r$checkpoint), `Release location` = r$site_full,
@@ -1347,7 +1347,7 @@ server <- function(input, output, session) {
                `Detection rate (%)` = r$rate, check.names = FALSE, stringsAsFactors = FALSE)
   })
   output$t_rate <- renderTable(rate_tbl(), striped = TRUE, digits = 1)
-  
+
   travel_tbl <- reactive({
     cp <- cp_f(); tg <- tags_f(); if (nrow(cp) == 0) return(data.frame())
     d <- cp %>% inner_join(tg[, c("pit", "reldt_posix")], by = "pit")
@@ -1362,7 +1362,7 @@ server <- function(input, output, session) {
       select(Checkpoint, everything(), -idx) %>% as.data.frame(check.names = FALSE)
   })
   output$t_travel <- renderTable(travel_tbl(), striped = TRUE)
-  
+
   # ---------------- Journeys ----------------
   journeys <- reactive({
     f <- fish_f(); f <- f[f$n_cp > 0, ]
@@ -1394,7 +1394,7 @@ server <- function(input, output, session) {
                           format(steps$first_det[k], "%b %d, %Y"),
                           round(as.numeric(difftime(steps$first_det[k], j$reldt_posix, units = "days")), 1))))))
   })
-  
+
   # ---------------- Migration ----------------
   mig_range <- reactive({
     tg <- tags_f(); cp <- cp_f()
@@ -1414,7 +1414,7 @@ server <- function(input, output, session) {
   })
   observeEvent(input$mig_speed, updateSliderInput(session, "mig_date", step = as.numeric(input$mig_speed)),
                ignoreInit = TRUE)
-  
+
   mig_counts <- reactive({
     req(input$mig_date)
     cp <- cp_f()
@@ -1428,9 +1428,9 @@ server <- function(input, output, session) {
     div(class = "tiles",
         stat_tile("Released so far", fmt_int(rel), "tagged fish released by this date", "gold"),
         lapply(seq_along(n), function(i) stat_tile(CHECKPOINTS$label[i], fmt_int(n[i]),
-                                                   tagList("fish detected by this date", tags$br(), tags$span(style = "opacity:.75;font-size:11px;", CHECKPOINTS$desc[i])), "teal")))
+                 tagList("fish detected by this date", tags$br(), tags$span(style = "opacity:.75;font-size:11px;", CHECKPOINTS$desc[i])), "teal")))
   })
-  
+
   output$mig_map <- renderLeaflet({
     leaflet() %>% addTiles() %>%
       addPolylines(lng = RIVER$master$lon, lat = RIVER$master$lat, color = "#5b8db8", weight = 3, opacity = 0.7) %>%
@@ -1448,7 +1448,7 @@ server <- function(input, output, session) {
                            color = "#fff", weight = 2, fillColor = "#e2573f", fillOpacity = 0.9,
                            label = sprintf("%s (%s): %s fish detected so far", CHECKPOINTS$label, CHECKPOINTS$desc, fmt_int(n)), group = "live")
   })
-  
+
   # spotlight fish
   spot_pit <- reactiveVal(NULL)
   spot_pool <- function(site = "any", dest = "any") {
@@ -1560,7 +1560,7 @@ server <- function(input, output, session) {
             div(div(class = "n", n_pass), div(style = "font-size:11px;opacity:.8;", "checkpoints passed")),
             div(div(class = "n", round(days)), div(style = "font-size:11px;opacity:.8;", "days since release"))))
   })
-  
+
   # ---------------- Speed ----------------
   output$speed_tiles <- renderUI({
     s <- speed_f()
@@ -1590,8 +1590,8 @@ server <- function(input, output, session) {
     bar_list(m$site_full, m$med, unname(POP_FILL[m$site_full]), sprintf("%.1f km/day", m$med),
              sub = paste0("n = ", fmt_int(m$n)))
   })
-  
-  
+
+
   # ---------------- Survival ----------------
   surv_res <- reactive({
     b <- raw(); req(b); tg <- tags_f(); req(nrow(tg) > 0)
@@ -1618,7 +1618,7 @@ server <- function(input, output, session) {
   surv_long <- reactive(bind_part("cjs"))
   tt_long   <- reactive(bind_part("tt"))
   det_long  <- reactive(bind_part("det"))
-  
+
   surv_plot_rows <- reactive({ d <- surv_long(); if (nrow(d) == 0) 0 else sum(d$type != "Detection") })
   tt_plot_rows   <- reactive({ d <- tt_long();   if (nrow(d) == 0) 0 else sum(d$n > 0) })
   output$p_surv <- renderPlot({
@@ -1627,7 +1627,7 @@ server <- function(input, output, session) {
   output$p_tt_means <- renderPlot({
     d <- tt_long(); req(nrow(d) > 0); gg_tt_means(d, dark())
   }, height = function() plot_rows_height(tt_plot_rows(), per = 34), bg = "transparent")
-  
+
   surv_tbl <- reactive({
     d <- surv_long(); if (nrow(d) == 0) return(data.frame())
     data.frame(`Release group` = d$group_label, `Fish released` = d$n_released, Parameter = d$parameter,
@@ -1645,7 +1645,7 @@ server <- function(input, output, session) {
   output$surv_omitted <- renderUI({
     r <- surv_res(); none <- names(r)[vapply(r, function(x) is.null(x$cjs), logical(1))]
     if (length(none)) div(class = "small-note", style = "font-size:12px;",
-                          "No fish were detected at the modeled checkpoints for: ", paste(none, collapse = "; "), ".")
+      "No fish were detected at the modeled checkpoints for: ", paste(none, collapse = "; "), ".")
   })
   output$t_surv <- renderTable(surv_tbl(), striped = TRUE, na = "-")
   output$t_tt_means <- renderTable(tt_tbl(), striped = TRUE, na = "-")
@@ -1654,8 +1654,8 @@ server <- function(input, output, session) {
     data.frame(`Release group` = d$group_label, `Fish released` = d$n_released,
                Checkpoint = d$site, `Fish detected` = d$fish_detected, check.names = FALSE)
   }, striped = TRUE)
-  
-  
+
+
   # ---------------- Recaptures (display only) ----------------
   recap_all <- reactiveVal(NULL)
   observeEvent(TRUE, recap_all(tryCatch(load_recaptures(DATA_DIR), error = function(e) NULL)), once = TRUE)
@@ -1714,8 +1714,8 @@ server <- function(input, output, session) {
     m %>% fitBounds(min(c(r$rel_lon, r$recap_lon)) - 0.3, min(c(r$rel_lat, r$recap_lat)) - 0.3,
                     max(c(r$rel_lon, r$recap_lon)) + 0.3, max(c(r$rel_lat, r$recap_lat)) + 0.3)
   })
-  
-  
+
+
   # ---------------- Left-pane selection summary (static, updates on Go) ----------------
   pv_rows <- function(...) {
     x <- list(...); div(lapply(seq(1, length(x), by = 2), function(i) div(class = "pv-r", span(x[[i]]), span(x[[i + 1]]))))
@@ -1739,8 +1739,8 @@ server <- function(input, output, session) {
                 "Median days to Bonneville Dam", if (is.na(med)) "-" else sprintf("%.1f", med),
                 "Recaptured", if (is.na(nrc)) "-" else fmt_int(nrc)))
   })
-  
-  
+
+
   # ---------------- Photos (read from GitHub) ----------------
   photos <- reactiveVal(NULL)          # NULL = not loaded, "error" = unreachable
   load_photos <- function() {
@@ -1794,7 +1794,7 @@ server <- function(input, output, session) {
                           div(class = "pmodal", tags$img(src = r$url, alt = r$caption),
                               p(style = "margin-top:10px;font-size:12px;", tags$a(href = r$url, target = "_blank", "Open original")))))
   })
-  
+
   # ---------------- Exports (light theme, versioned, GMT-7 stamp) ----------------
   stamp <- function() tz_now("%m%d%Y_%H%M%S")
   # every exported plot carries a visible footer: population, years, version, date and time (GMT-7)
@@ -1813,7 +1813,7 @@ server <- function(input, output, session) {
   dl_csv <- function(name, getter)
     downloadHandler(filename = function() sprintf("%s_v%s_%s.csv", name, APP_VERSION, stamp()),
                     content  = function(file) write.csv(getter(), file, row.names = FALSE))
-  
+
   output$dl_p_year   <- dl_png("fish_released_by_year", function() gg_release_year(tags_f(), FALSE))
   output$dl_p_rate   <- dl_png("detection_rate",        function() gg_rate(rate_f(), FALSE))
   output$dl_p_count  <- dl_png("fish_detected",         function() gg_count(rate_f(), FALSE))
