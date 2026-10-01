@@ -1,0 +1,7 @@
+install.packages("rsconnect")
+rsconnect::setAccountInfo(name='macus-ong', token='CE080A4B248EDE485D98F20E97F8BB7C', secret='sZXXUGABpZ+GNu/sIH9njJwwMxX4bWEqPvXJQ6gn')
+rsconnect::accounts()
+rsconnect::removeAccount("macus-ong-x")
+rsconnect::accounts()
+setwd("C:/Users/mong/OneDrive - Okanagan Nation Alliance/Desktop/2026 - TY 2026 BY 2024 PIT Tech/CSS_FTT_Dashboard")
+source("App_Dev/tools/deploy_shinyapps.R")

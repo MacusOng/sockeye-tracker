@@ -1,3 +1,23 @@
+### **v0.13.0 — Multi-Select Population Picker** (2026-10-01)
+
+**Added**
+- **Population selector** (left pane) now uses pickerInput() with multi-select: pick any combination of release sites or "All Populations" for convenience
+- Smart auto-sync: selecting "All Populations" locks it (can't mix with individual sites); selecting all 6 individual sites auto-converts to "All Populations"
+- Individual populations (Equesis Creek, Mission Creek, Shingle Creek, Skaha Lake, Osoyoos Lake, Okanagan Lake) can be freely toggled in any combination when "All Populations" is deselected
+- Population display shows comma-separated list of selected sites (e.g., "Equesis Creek, Skaha Lake") or "All populations" if all 6 are selected
+
+**Changed**
+- Left-pane layout: Population selector is now a compact pickerInput with search (liveSearch), action buttons (Select All / Deselect All), and count display ("3 sites selected")
+
+**Technical**
+- Added INDIVIDUAL_SITES constant (all 6 release site codes)
+- Added selected_populations() reactive: enforces "All Populations" exclusivity and returns the actual sites to filter by
+- Added smart observeEvent() with 3 rules for auto-sync behavior
+- Updated 	ags_f() filtering: now uses 	g[tg %in% pops_to_filter, ] instead of single-site filter
+- Updated pop_name() to display comma-separated site labels or "All populations"
+- Requires shinyWidgets library (added to suppressPackageStartupMessages)
+
+---
 # Version tracker - Let's Follow the Sockeye
 
 Every change to `app.R` gets a version here. Newest first. Times are GMT-7.
@@ -107,3 +127,4 @@ Entry types: Added, Changed, Fixed, Removed.
 - First version.
 
 Dates before 0.5.0 were not recorded.
+
