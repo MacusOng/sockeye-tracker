@@ -10,6 +10,9 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.15.0 - 2026-11-02
+- Added: survival p-values on the Survival tab, under the "Survival and lambda" table. Release groups that share the same survival estimate (for example "Release to Rocky Reach Dam" for the lake populations) are compared pair by pair with a two-sided z-test on the Cormack-Jolly-Seber estimates and their standard errors, Holm-adjusted when there are several pairs. Each comparison has a plain-language summary and a table. Detection probability and lambda are not compared, because they are not survival; unstable estimates are left out and listed.
+
 ## 0.14.0 - 2026-11-02
 - Added: population comparisons with p-values. The Survival tab has a new card, "Do the selected populations differ? (p-values)", that compares the populations picked in the left pane on three measures: share of tagged fish detected at Rocky Reach Dam or farther downstream (Fisher's exact test for two populations, chi-squared for three or more), days from release to Rocky Reach Dam, and pace in km/day (Wilcoxon rank-sum for two populations, Kruskal-Wallis for three or more). With three or more populations a pairwise table (Holm-adjusted) shows which pairs differ. Each result has a plain-language summary of what the p-value means for that selection, plus an "Export p-values (CSV)" button.
 - Added: the pace p-value also shows on the Speed tab under "Median pace by release location".

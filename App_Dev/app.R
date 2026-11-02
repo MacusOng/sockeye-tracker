@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.14.0"
+APP_VERSION      <- "0.15.0"
 APP_TIMEZONE     <- "Etc/GMT+7"                       # = UTC-7 (GMT-7)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -784,6 +784,50 @@ pop_blurb <- function(r) {
 }
 
 
+# Survival comparisons between release groups (Cormack-Jolly-Seber estimates).
+# Only the same survival parameter is compared (e.g. "Release to Rocky Reach Dam"),
+# using a two-sided z-test on estimate / standard error (Wald test), Holm-adjusted
+# across all pairs of that parameter. Detection probabilities and lambda are not
+# compared: they are not survival. Unstable estimates are left out.
+compare_survival <- function(d) {
+  if (is.null(d) || nrow(d) == 0) return(list())
+  d <- d[d$type == "Survival", , drop = FALSE]
+  out <- list()
+  for (par in unique(d$parameter)) {
+    x <- d[d$parameter == par, , drop = FALSE]
+    left_out <- x$group_label[x$unstable | !is.finite(x$se) | x$se <= 0]
+    x <- x[!(x$group_label %in% left_out), , drop = FALSE]
+    if (nrow(x) < 2) { if (nrow(x) + length(left_out) >= 2)
+      out[[par]] <- list(parameter = par, groups = x, pairs = NULL, dropped = left_out); next }
+    cmb <- utils::combn(nrow(x), 2)
+    pr <- data.frame(a = x$group_label[cmb[1, ]], b = x$group_label[cmb[2, ]],
+                     ea = x$estimate[cmb[1, ]], eb = x$estimate[cmb[2, ]], stringsAsFactors = FALSE)
+    z <- (pr$ea - pr$eb) / sqrt(x$se[cmb[1, ]]^2 + x$se[cmb[2, ]]^2)
+    pr$p <- p.adjust(2 * pnorm(-abs(z)), method = "holm")
+    out[[par]] <- list(parameter = par, groups = x, pairs = pr, dropped = left_out)
+  }
+  out
+}
+
+surv_blurb <- function(r) {
+  pr <- r$pairs
+  if (is.null(pr) || nrow(pr) == 0)
+    return("Not enough release groups with a stable estimate to compare.")
+  reach <- paste("from", sub("^Release", "release", sub("^Survival: ", "", r$parameter)))
+  bits <- vapply(seq_len(nrow(pr)), function(i) {
+    hi <- if (pr$ea[i] >= pr$eb[i]) 1 else 2
+    w  <- c(pr$a[i], pr$b[i]); e <- c(pr$ea[i], pr$eb[i])
+    ratio <- if (min(e) > 0) sprintf(" (about %.1f times as many)", max(e) / min(e)) else ""
+    if (pr$p[i] < P_ALPHA)
+      sprintf("%s survived %s at %.0f%%, compared with %.0f%% for %s%s (%s). A gap this large would turn up by chance alone %s if survival were really the same, so the difference is probably real.",
+              w[hi], reach, 100 * e[hi], 100 * e[3 - hi], w[3 - hi], ratio, fmt_p(pr$p[i]), p_chance(pr$p[i]))
+    else
+      sprintf("%s (%.0f%%) and %s (%.0f%%) survived %s at rates these data cannot tell apart (%s): chance alone would give a gap this size %s.",
+              pr$a[i], 100 * pr$ea[i], pr$b[i], 100 * pr$eb[i], reach, fmt_p(pr$p[i]), p_chance(pr$p[i]))
+  }, "")
+  paste(bits, collapse = " ")
+}
+
 # -----------------------------------------------------------------------------
 # 3b. TRAVEL-TIME STATISTICS AND SINGLE-RELEASE SURVIVAL (Cormack-Jolly-Seber)
 #     Ported from the manual PitPro verification script. Modeled chains:
@@ -1319,7 +1363,8 @@ ui <- fluidPage(
                                   tableOutput("t_surv"),
                                   downloadButton("dl_t_surv", "Export table (CSV)", class = "btn-default"),
                                   div(class = "small-note", style = "font-size:12px;",
-                                      "Survival at the last checkpoint and detection there cannot be separated on a single release, so only their product, lambda, is reported. Estimates near 0% or 100%, or with a large standard error, are flagged as unstable: they reflect too few detections, not a real value.")),
+                                      "Survival at the last checkpoint and detection there cannot be separated on a single release, so only their product, lambda, is reported. Estimates near 0% or 100%, or with a large standard error, are flagged as unstable: they reflect too few detections, not a real value."),
+                                  uiOutput("surv_tests")),
                              card("Fish detected at each modeled checkpoint", tableOutput("t_surv_det"))),
 
                     tabPanel("Photos",
@@ -1917,6 +1962,41 @@ server <- function(input, output, session) {
                           "No fish were detected at the modeled checkpoints for: ", paste(none, collapse = "; "), ".")
   })
   output$t_surv <- renderTable(surv_tbl(), striped = TRUE, na = "-")
+
+  # p-values between release groups for the same survival estimate
+  surv_cmp <- reactive(compare_survival(surv_long()))
+  output$surv_tests <- renderUI({
+    r <- surv_cmp()
+    if (length(r) == 0)
+      return(div(class = "ptest", h4("Do survival estimates differ? (p-values)"),
+                 div(class = "pblurb", "Select two or more populations (or release years) that share a survival estimate, then press Go.")))
+    blocks <- lapply(r, function(x) {
+      pr <- x$pairs
+      best <- if (!is.null(pr) && nrow(pr)) min(pr$p) else NA
+      div(class = "ptest",
+          h4(paste0("Survival p-values: ", sub("^Survival: ", "", x$parameter))),
+          if (!is.na(best)) span(class = paste("pbadge", if (best < P_ALPHA) "sig" else "ns"),
+                                 if (nrow(pr) == 1) fmt_p(pr$p[1]) else paste("smallest", fmt_p(best))),
+          if (!is.na(best)) span(class = "pmeth", "z-test on the model estimates", if (nrow(pr) > 1) ", Holm-adjusted"),
+          div(class = "pblurb", surv_blurb(x)),
+          if (!is.null(pr) && nrow(pr) > 1)
+            tags$table(class = "ptab",
+                       tags$tr(tags$th("Release group"), tags$th("Survival"), tags$th("vs."), tags$th("Survival"),
+                               tags$th("p-value"), tags$th("Different?")),
+                       lapply(seq_len(nrow(pr)), function(i)
+                         tags$tr(tags$td(pr$a[i]), tags$td(sprintf("%.0f%%", 100 * pr$ea[i])),
+                                 tags$td(pr$b[i]), tags$td(sprintf("%.0f%%", 100 * pr$eb[i])),
+                                 tags$td(fmt_p(pr$p[i])),
+                                 tags$td(if (pr$p[i] < P_ALPHA) "Probably" else "No clear difference")))),
+          if (length(x$dropped)) div(class = "pmeth", "Left out (unstable estimate): ", paste(x$dropped, collapse = "; "), "."))
+    })
+    div(style = "margin-top:14px;", blocks,
+        div(class = "small-note", style = "font-size:12px;",
+            "Only the same survival estimate is compared between groups. Detection probability and lambda are not compared: ",
+            "lambda mixes survival with detection at the last checkpoint, so a difference in lambda is not a difference in survival. ",
+            "Survival from release covers different distances for different release sites (Skaha Lake fish pass more river and dams than Osoyoos Lake fish ",
+            "before Rocky Reach), so a real difference here does not say why it happened."))
+  })
   output$t_tt_means <- renderTable(tt_tbl(), striped = TRUE, na = "-")
   output$t_surv_det <- renderTable({
     d <- det_long(); if (nrow(d) == 0) return(data.frame())
