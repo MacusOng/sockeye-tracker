@@ -10,6 +10,10 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.16.0 - 2026-11-02
+- Added: "may still be migrating" check on the p-value cards (Survival and Speed tabs). For each release site and year, the dashboard compares the days between release and the end of the data (latest detection in that export) with how long that site's fish usually take to reach Rocky Reach Dam (90th percentile from earlier release years; calendar fallback when there is no history: hatchery fry complete after July 31 of the next year, lake and screw-trap fish after August 31 of the release year). Flagged groups get a warning and are left out of the p-value tests by default; a tick box puts them back in.
+- Added: print layout. Printing or saving the page as PDF no longer draws the left pane over the content, and download buttons are hidden.
+
 ## 0.15.0 - 2026-11-02
 - Added: survival p-values on the Survival tab, under the "Survival and lambda" table. Release groups that share the same survival estimate (for example "Release to Rocky Reach Dam" for the lake populations) are compared pair by pair with a two-sided z-test on the Cormack-Jolly-Seber estimates and their standard errors, Holm-adjusted when there are several pairs. Each comparison has a plain-language summary and a table. Detection probability and lambda are not compared, because they are not survival; unstable estimates are left out and listed.
 

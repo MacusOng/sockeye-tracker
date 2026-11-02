@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.15.0"
+APP_VERSION      <- "0.16.0"
 APP_TIMEZONE     <- "Etc/GMT+7"                       # = UTC-7 (GMT-7)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -828,6 +828,47 @@ surv_blurb <- function(r) {
   paste(bits, collapse = " ")
 }
 
+# Release groups that may still be migrating when the data were exported.
+# Threshold per release site: 90th percentile of days from release to the first
+# Rocky Reach Dam detection, from that site's earlier release years (needs at least
+# MIN_HIST_FISH fish). Without enough history, a calendar fallback is used:
+# ONA Fish Hatchery fry rear in a lake for a year, so they are treated as complete
+# after July 31 of the year after release; lake and screw-trap fish after August 31
+# of the release year. A group is flagged when fewer days have passed between its
+# median release date and the data cut-off than its threshold. The cut-off is the
+# latest detection in the export(s) the group's fish came from (falls back to the
+# export date), so an interrogation file that ends early is accounted for.
+MIN_HIST_FISH <- 5
+HATCHERY_CODES <- c("EQUESC", "MISS3C", "SHINGC")
+migration_flags <- function(all_tag, all_cp, sel_tg, export_date) {
+  if (nrow(sel_tg) == 0) return(data.frame())
+  rr  <- all_cp[all_cp$cp == "RRJ", c("pit", "first_det")]
+  hist <- merge(all_tag[, c("pit", "relsite", "year", "reldt_posix")], rr, by = "pit")
+  hist$days <- as.numeric(difftime(hist$first_det, hist$reldt_posix, units = "days"))
+  grp <- unique(sel_tg[!is.na(sel_tg$year), c("relsite", "site_full", "year")])
+  ld <- merge(all_cp[, c("pit", "last_det")], all_tag[, c("pit", "dataset")], by = "pit")
+  ds_cut <- if (nrow(ld)) tapply(as.numeric(ld$last_det), ld$dataset, max, na.rm = TRUE) else numeric()
+  out <- lapply(seq_len(nrow(grp)), function(i) {
+    g <- grp[i, ]
+    rel <- as.Date(median(sel_tg$reldt_posix[sel_tg$relsite == g$relsite & sel_tg$year == g$year], na.rm = TRUE))
+    h <- hist$days[hist$relsite == g$relsite & hist$year < g$year & is.finite(hist$days)]
+    if (length(h) >= MIN_HIST_FISH) {
+      thr <- as.numeric(quantile(h, 0.9)); basis <- sprintf("%d earlier fish from this site", length(h))
+    } else {
+      end <- if (g$relsite %in% HATCHERY_CODES) as.Date(sprintf("%d-07-31", g$year + 1)) else as.Date(sprintf("%d-08-31", g$year))
+      thr <- as.numeric(end - rel); basis <- "calendar rule (not enough earlier years)"
+    }
+    ds <- unique(sel_tg$dataset[sel_tg$relsite == g$relsite & sel_tg$year == g$year])
+    cut <- suppressWarnings(max(ds_cut[names(ds_cut) %in% ds]))
+    cutoff <- if (is.finite(cut)) as.Date(as.POSIXct(cut, origin = "1970-01-01", tz = "UTC")) else as.Date(export_date)
+    elapsed <- as.numeric(cutoff - rel)
+    data.frame(relsite = g$relsite, site_full = g$site_full, year = g$year, released = rel, cutoff = cutoff,
+               elapsed = elapsed, threshold = thr, basis = basis,
+               flagged = is.finite(elapsed) && is.finite(thr) && elapsed < thr, stringsAsFactors = FALSE)
+  })
+  do.call(rbind, out)
+}
+
 # -----------------------------------------------------------------------------
 # 3b. TRAVEL-TIME STATISTICS AND SINGLE-RELEASE SURVIVAL (Cormack-Jolly-Seber)
 #     Ported from the manual PitPro verification script. Modeled chains:
@@ -1135,6 +1176,13 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 .pblurb{font-size:13px;line-height:1.5;margin:4px 0 8px;}
 .ptab{border-collapse:collapse;font-size:12px;margin:4px 0 8px;}
 .ptab th,.ptab td{border-bottom:1px solid var(--line);padding:4px 10px;text-align:left;}
+.mig-warn{border-left:4px solid var(--gold);background:var(--soft);padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.5;margin:4px 0 12px;}
+@media print{
+  .layout{display:block !important;}
+  aside.side{position:static !important;margin-bottom:16px;break-inside:avoid;}
+  a.shiny-download-link,.btn-go,.btn-soft{display:none !important;}
+  .card{break-inside:avoid-page;}
+}
 /* tabs as pill bar */
 .nav-pills{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;display:inline-flex;flex-wrap:wrap;margin-bottom:16px;}
 .nav-pills>li{float:none;} .nav-pills>li>a{border-radius:999px;color:var(--ink);padding:7px 15px;font-size:13px;margin:0;}
@@ -1349,6 +1397,7 @@ ui <- fluidPage(
                                                c("Each release year separately" = "year", "Selected years combined" = "all"))),
                              card("Do the selected populations differ? (p-values)",
                                   div(class = "sub", "Compares the populations picked in the left pane. Release years in the selection are pooled."),
+                                  checkboxInput("incl_migrating", "Include release groups that may still be migrating", FALSE),
                                   uiOutput("pop_tests"),
                                   downloadButton("dl_pvals", "Export p-values (CSV)", class = "btn-default")),
                              card("Travel time (days)",
@@ -1850,11 +1899,35 @@ server <- function(input, output, session) {
 
 
   # ---------------- Population comparisons (p-values) ----------------
-  pop_cmp <- reactive({
-    tg <- tags_f(); req(nrow(tg) > 0)
-    compare_pops(tg, cp_f(), speed_f())
+  mig_flags <- reactive({
+    b <- raw(); req(b); tg <- tags_f()
+    migration_flags(b$tag, b$cp, tg, b$export_date)
   })
-  n_pops_sel <- reactive(length(unique(tags_f()$site_full)))
+  mig_flagged <- reactive({ f <- mig_flags(); if (nrow(f)) f[f$flagged, , drop = FALSE] else f })
+  incl_mig <- reactive(isTRUE(input$incl_migrating))
+  tags_cmp <- reactive({
+    tg <- tags_f(); f <- mig_flagged()
+    if (incl_mig() || nrow(f) == 0) return(tg)
+    tg[!(paste(tg$relsite, tg$year) %in% paste(f$relsite, f$year)), , drop = FALSE]
+  })
+  mig_warning <- function() {
+    f <- mig_flagged(); if (nrow(f) == 0) return(NULL)
+    who <- paste(sprintf("%s %d (released %s; data run to %s, %d days, but these fish usually need about %d)",
+                         f$site_full, f$year, format(f$released, "%b %d, %Y"), format(f$cutoff, "%b %d, %Y"),
+                         round(f$elapsed), round(f$threshold)), collapse = "; ")
+    div(class = "mig-warn",
+        strong("May still be migrating: "), who, ". ",
+        "Fewer days have passed between release and the end of the data than these fish usually take to reach Rocky Reach Dam, so a low detection rate may reflect timing, not survival. ",
+        if (incl_mig()) "They are included in the tests below because the box above is ticked."
+        else "They are left out of the tests below; tick the box above to include them.")
+  }
+  pop_cmp <- reactive({
+    tg <- tags_cmp(); req(nrow(tg) > 0)
+    cp <- cp_f(); sp <- speed_f()
+    compare_pops(tg, cp[cp$pit %in% tg$pit, , drop = FALSE],
+                 if (nrow(sp)) sp[sp$pit %in% tg$pit, , drop = FALSE] else sp)
+  })
+  n_pops_sel <- reactive(length(unique(tags_cmp()$site_full)))
   need_two <- function() div(class = "empty",
     "Select two or more populations in the left pane and press Go to compare them with a p-value.")
 
@@ -1884,13 +1957,13 @@ server <- function(input, output, session) {
     "Hatchery fish start upstream at Penticton, so their pace covers a longer stretch of river than lake fish.")
 
   output$pop_tests <- renderUI({
-    if (n_pops_sel() < 2) return(need_two())
+    if (n_pops_sel() < 2) return(div(mig_warning(), need_two()))
     r <- pop_cmp()
-    div(ptest_ui(r$detect), ptest_ui(r$days), ptest_ui(r$pace), pvals_note)
+    div(mig_warning(), ptest_ui(r$detect), ptest_ui(r$days), ptest_ui(r$pace), pvals_note)
   })
   output$pace_test <- renderUI({
-    if (n_pops_sel() < 2) return(NULL)
-    div(style = "margin-top:10px;", ptest_ui(pop_cmp()$pace))
+    if (n_pops_sel() < 2) return(mig_warning())
+    div(style = "margin-top:10px;", mig_warning(), ptest_ui(pop_cmp()$pace))
   })
   pvals_tbl <- reactive({
     if (n_pops_sel() < 2) return(data.frame(Note = "Select two or more populations to compare."))
@@ -1964,11 +2037,18 @@ server <- function(input, output, session) {
   output$t_surv <- renderTable(surv_tbl(), striped = TRUE, na = "-")
 
   # p-values between release groups for the same survival estimate
-  surv_cmp <- reactive(compare_survival(surv_long()))
+  surv_cmp <- reactive({
+    d <- surv_long(); f <- mig_flagged()
+    if (!incl_mig() && nrow(f) && nrow(d)) {
+      bad <- if (identical(input$surv_mode, "all")) unique(f$site_full) else paste0(f$site_full, " - ", f$year)
+      d <- d[!(d$group_label %in% bad), , drop = FALSE]
+    }
+    compare_survival(d)
+  })
   output$surv_tests <- renderUI({
     r <- surv_cmp()
     if (length(r) == 0)
-      return(div(class = "ptest", h4("Do survival estimates differ? (p-values)"),
+      return(div(class = "ptest", mig_warning(), h4("Do survival estimates differ? (p-values)"),
                  div(class = "pblurb", "Select two or more populations (or release years) that share a survival estimate, then press Go.")))
     blocks <- lapply(r, function(x) {
       pr <- x$pairs
@@ -1990,7 +2070,10 @@ server <- function(input, output, session) {
                                  tags$td(if (pr$p[i] < P_ALPHA) "Probably" else "No clear difference")))),
           if (length(x$dropped)) div(class = "pmeth", "Left out (unstable estimate): ", paste(x$dropped, collapse = "; "), "."))
     })
-    div(style = "margin-top:14px;", blocks,
+    div(style = "margin-top:14px;", mig_warning(),
+        if (nrow(mig_flagged()) && !incl_mig() && identical(input$surv_mode, "all"))
+          div(class = "pmeth", "With \"Selected years combined\", a population is left out entirely if any of its years may still be migrating; switch to \"Each release year separately\" to compare the finished years."),
+        blocks,
         div(class = "small-note", style = "font-size:12px;",
             "Only the same survival estimate is compared between groups. Detection probability and lambda are not compared: ",
             "lambda mixes survival with detection at the last checkpoint, so a difference in lambda is not a difference in survival. ",
