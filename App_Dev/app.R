@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.13.0"
+APP_VERSION      <- "0.14.0"
 APP_TIMEZONE     <- "Etc/GMT+7"                       # = UTC-7 (GMT-7)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -174,11 +174,11 @@ find_all_datasets <- function(data_dir = DATA_DIR) {
   files <- files[grepl("pitpro", basename(files), ignore.case = TRUE) &
                    !grepl("^~\\$", basename(files))]
   if (length(files) == 0) return(data.frame())
-  
+
   months <- c(january = 1, february = 2, march = 3, april = 4, may = 5, june = 6,
               july = 7, august = 8, september = 9, october = 10, november = 11, december = 12)
   pat <- sprintf("(%s)\\s*([0-9]{1,2})\\s+(20[0-9]{2})", paste(names(months), collapse = "|"))
-  
+
   parse_one <- function(f) {
     bn <- tolower(tools::file_path_sans_ext(basename(f)))
     z  <- regmatches(bn, regexec(pat, bn))[[1]]
@@ -191,7 +191,7 @@ find_all_datasets <- function(data_dir = DATA_DIR) {
   }
   info <- do.call(rbind, lapply(files, parse_one))
   info <- info[!is.na(info$type), , drop = FALSE]
-  
+
   out <- list()
   for (k in unique(info$key)) {
     sub <- info[info$key == k, ]
@@ -234,12 +234,12 @@ load_pit_pair <- function(tag_path, obs_path, species = "4") {
   names(obs) <- c("pit", "site", "obsdt", "antenna")
   tag[] <- lapply(tag, trimws)
   obs[] <- lapply(obs, trimws)
-  
+
   tag <- tag[!is.na(tag$pit) & tag$pit != "" & tag$species == species, , drop = FALSE]
   tag <- tag[!duplicated(tag$pit), , drop = FALSE]
   tag$reldt_posix <- lubridate::ymd_hms(tag$reldt, tz = "UTC", quiet = TRUE)
   obs$obsdt_posix <- lubridate::ymd_hms(obs$obsdt, tz = "UTC", quiet = TRUE)
-  
+
   obs <- obs[obs$pit %in% tag$pit, , drop = FALSE]
   jr  <- setNames(as.numeric(tag$reldt_posix), tag$pit)
   jo  <- as.numeric(obs$obsdt_posix)
@@ -256,7 +256,7 @@ get_bundle <- function(data_dir = DATA_DIR) {
   key <- paste(ds$tag_file, ds$obs_file,
                file.info(ds$tag_file)$mtime, file.info(ds$obs_file)$mtime, collapse = "|")
   if (identical(.cache$key, key)) return(.cache$bundle)
-  
+
   tags <- list(); obss <- list(); log <- character()
   for (i in seq_len(nrow(ds))) {
     ld <- tryCatch(suppressMessages(load_pit_pair(ds$tag_file[i], ds$obs_file[i])),
@@ -269,19 +269,19 @@ get_bundle <- function(data_dir = DATA_DIR) {
                           format(ds$date[i]), fmt_int(nrow(ld$tag)), fmt_int(nrow(ld$obs))))
   }
   if (length(tags) == 0) return(NULL)
-  
+
   tag <- do.call(rbind, tags)
   tag <- tag[!duplicated(tag$pit), , drop = FALSE]
   obs <- do.call(rbind, obss)
   obs <- obs[!duplicated(obs[, c("pit", "site", "obsdt")]), , drop = FALSE]
   obs <- obs[obs$pit %in% tag$pit, , drop = FALSE]
-  
+
   k <- match(tag$relsite, RELEASE$code)
   tag$year       <- lubridate::year(tag$reldt_posix)
   tag$site_label <- ifelse(is.na(k), "Other release site", RELEASE$label[k])
   tag$site_full  <- ifelse(is.na(k), "Other release site", RELEASE$full[k])
   tag$start_idx  <- ifelse(is.na(k), 1, RELEASE$start_idx[k])
-  
+
   obs$cp <- unname(SITE_TO_CP[obs$site])
   cpobs  <- obs[!is.na(obs$cp) & !is.na(obs$obsdt_posix), , drop = FALSE]
   cp <- cpobs %>%
@@ -293,7 +293,7 @@ get_bundle <- function(data_dir = DATA_DIR) {
     group_by(pit, site) %>% summarise(first_det = min(obsdt_posix), .groups = "drop") %>% as.data.frame()
   obs_n <- as.data.frame(table(pit = obs$pit), stringsAsFactors = FALSE)
   names(obs_n)[2] <- "n_obs"
-  
+
   b <- list(tag = tag, cp = cp, site_first = site_first, obs_n = obs_n, datasets = ds, log = log,
             export_date = max(ds$date), n_obs = nrow(obs))
   message("Data loaded:\n  ", paste(log, collapse = "\n  "))
@@ -642,6 +642,149 @@ speed_from <- function(cp, tg) {
 
 
 # -----------------------------------------------------------------------------
+# 3a. POPULATION COMPARISONS (p-values)
+#     Compares the populations picked in the left pane on three measures:
+#       1. share of tagged fish detected at Rocky Reach Dam or farther downstream
+#          (Fisher's exact test for 2 populations, chi-squared for 3+)
+#       2. days from release to the first Rocky Reach Dam detection
+#       3. pace (km/day) between first and last checkpoint
+#          (2 and 3: Wilcoxon rank-sum for 2 populations, Kruskal-Wallis for 3+)
+#     With 3+ populations, pairwise tests (Holm-adjusted) show which pairs differ.
+#     Populations with fewer than MIN_FISH_TEST fish are left out of a test.
+# -----------------------------------------------------------------------------
+MIN_FISH_TEST <- 3
+P_ALPHA       <- 0.05
+
+fmt_p <- function(p) {
+  if (is.null(p) || is.na(p)) return("-")
+  if (p < 0.001) "p < 0.001" else if (p < 0.01) sprintf("p = %.3f", p) else sprintf("p = %.2f", p)
+}
+p_chance <- function(p) {
+  if (p < 0.001) "less than 1 time in 1,000"
+  else if (p < 0.01) { k <- max(1, round(p * 1000)); sprintf("about %d time%s in 1,000", k, if (k == 1) "" else "s") }
+  else if (p > 0.95) "almost every time"
+  else { k <- max(1, round(p * 100)); sprintf("about %d time%s in 100", k, if (k == 1) "" else "s") }
+}
+
+# Pairwise p-value matrix (lower triangle) -> long data frame
+pairs_long <- function(m) {
+  if (is.null(m)) return(NULL)
+  out <- list()
+  for (i in rownames(m)) for (j in colnames(m))
+    if (!is.na(m[i, j])) out[[length(out) + 1]] <- data.frame(a = j, b = i, p = m[i, j], stringsAsFactors = FALSE)
+  if (length(out)) do.call(rbind, out) else NULL
+}
+
+# Numeric measure (days, km/day) compared across populations
+test_numeric <- function(x, g) {
+  ok <- is.finite(x) & !is.na(g); x <- x[ok]; g <- as.character(g[ok])
+  n <- table(g); keep <- names(n)[n >= MIN_FISH_TEST]; dropped <- setdiff(names(n), keep)
+  x <- x[g %in% keep]; g <- factor(g[g %in% keep])
+  grp <- if (length(x)) data.frame(group = levels(g), n = as.integer(table(g)),
+                                   median = as.numeric(tapply(x, g, median)), stringsAsFactors = FALSE)
+         else data.frame(group = character(), n = integer(), median = numeric())
+  res <- list(kind = "numeric", p = NA_real_, method = NA_character_, groups = grp, dropped = dropped, pairs = NULL)
+  if (nlevels(g) < 2) return(res)
+  if (nlevels(g) == 2) {
+    res$p <- suppressWarnings(wilcox.test(x ~ g, exact = FALSE)$p.value); res$method <- "Wilcoxon rank-sum test"
+  } else {
+    res$p <- kruskal.test(x, g)$p.value; res$method <- "Kruskal-Wallis test"
+    res$pairs <- pairs_long(suppressWarnings(
+      pairwise.wilcox.test(x, g, p.adjust.method = "holm", exact = FALSE)$p.value))
+  }
+  if (!is.finite(res$p)) res$p <- NA_real_
+  res
+}
+
+# Yes/no measure (detected downstream) compared across populations
+test_prop <- function(hit, g) {
+  ok <- !is.na(g); hit <- hit[ok]; g <- as.character(g[ok])
+  n <- table(g); keep <- names(n)[n >= MIN_FISH_TEST]; dropped <- setdiff(names(n), keep)
+  hit <- hit[g %in% keep]; g <- factor(g[g %in% keep])
+  grp <- if (length(hit)) data.frame(group = levels(g), n = as.integer(table(g)),
+                                     hits = as.integer(tapply(hit, g, sum)), stringsAsFactors = FALSE)
+         else data.frame(group = character(), n = integer(), hits = integer())
+  grp$pct <- if (nrow(grp)) 100 * grp$hits / grp$n else numeric()
+  res <- list(kind = "prop", p = NA_real_, method = NA_character_, groups = grp, dropped = dropped, pairs = NULL)
+  if (nlevels(g) < 2) return(res)
+  if (all(grp$hits == 0) || all(grp$hits == grp$n)) {        # no variation: nothing to test
+    res$p <- 1; res$method <- "no test needed (all populations identical)"; return(res)
+  }
+  tab <- table(g, factor(hit, levels = c(TRUE, FALSE)))
+  if (nlevels(g) == 2) {
+    res$p <- fisher.test(tab)$p.value; res$method <- "Fisher's exact test"
+  } else {
+    ex <- suppressWarnings(chisq.test(tab)$expected)
+    if (any(ex < 5)) {
+      set.seed(2026)
+      res$p <- chisq.test(tab, simulate.p.value = TRUE, B = 5000)$p.value
+      res$method <- "chi-squared test (simulated, small counts)"
+    } else {
+      res$p <- chisq.test(tab)$p.value; res$method <- "chi-squared test"
+    }
+    res$pairs <- pairs_long(suppressWarnings(
+      pairwise.prop.test(grp$hits, grp$n, p.adjust.method = "holm")$p.value))
+    if (!is.null(res$pairs)) {   # pairwise.prop.test labels by position; map back to names
+      res$pairs$a <- grp$group[as.integer(res$pairs$a)]; res$pairs$b <- grp$group[as.integer(res$pairs$b)]
+    }
+  }
+  if (!is.finite(res$p)) res$p <- NA_real_
+  res
+}
+
+# All three comparisons for the current selection
+compare_pops <- function(tg, cp, speed) {
+  rr <- match("RRJ", CHECKPOINTS$cp)
+  hit <- tg$pit %in% cp$pit[cp$idx >= rr]
+  r1 <- test_prop(hit, tg$site_full)
+  r1$title <- "Detected at Rocky Reach Dam or farther downstream"
+
+  a <- cp[cp$cp == "RRJ", c("pit", "first_det"), drop = FALSE]
+  a <- left_join(a, tg[, c("pit", "reldt_posix", "site_full")], by = "pit")
+  days <- as.numeric(difftime(a$first_det, a$reldt_posix, units = "days"))
+  r2 <- test_numeric(days, a$site_full)
+  r2$title <- "Days from release to Rocky Reach Dam"; r2$what <- "travel time to Rocky Reach Dam"; r2$unit <- "days"
+
+  r3 <- if (nrow(speed)) test_numeric(speed$pace, speed$site_full) else test_numeric(numeric(), character())
+  r3$title <- "Pace between first and last checkpoint"; r3$what <- "pace"; r3$unit <- "km/day"
+  list(detect = r1, days = r2, pace = r3)
+}
+
+# Plain-language summary of one comparison
+pop_blurb <- function(r) {
+  g <- r$groups
+  if (identical(substr(nz(r$method, ""), 1, 7), "no test"))
+    return("Every population had the same result here, so there is no difference to test.")
+  if (is.na(r$p)) {
+    return(if (nrow(g) < 2) sprintf("Not enough fish to compare: a population needs at least %d fish with this measurement.", MIN_FISH_TEST)
+           else "This comparison could not be calculated for the current selection.")
+  }
+  if (r$kind == "prop") {
+    desc <- paste0(sprintf("%.1f%% of %s fish (%s of %s)", g$pct, g$group, fmt_int(g$hits), fmt_int(g$n)), collapse = "; ")
+    lead <- sprintf("Share of tagged fish detected at Rocky Reach Dam or farther downstream: %s (%s).", desc, fmt_p(r$p))
+  } else if (nrow(g) == 2) {
+    lead <- if (r$unit == "days")
+      sprintf("Fish from %s took a median of %.1f days to reach Rocky Reach Dam (n = %s), compared with %.1f days for %s (n = %s) (%s).",
+              g$group[1], g$median[1], fmt_int(g$n[1]), g$median[2], g$group[2], fmt_int(g$n[2]), fmt_p(r$p))
+    else
+      sprintf("Fish from %s moved at a median pace of %.1f km/day (n = %s), compared with %.1f km/day for %s (n = %s) (%s).",
+              g$group[1], g$median[1], fmt_int(g$n[1]), g$median[2], g$group[2], fmt_int(g$n[2]), fmt_p(r$p))
+  } else {
+    lo <- which.min(g$median); hi <- which.max(g$median)
+    lead <- sprintf("Median %s ranged from %.1f %s (%s) to %.1f %s (%s) across %d populations (%s).",
+                    r$what, g$median[lo], r$unit, g$group[lo], g$median[hi], r$unit, g$group[hi], nrow(g), fmt_p(r$p))
+  }
+  meaning <- if (r$p < P_ALPHA)
+    sprintf("If these populations really did not differ, a gap this large would turn up by chance alone %s. That is rare, so the difference is probably real.", p_chance(r$p))
+  else
+    sprintf("If these populations really did not differ, chance alone would produce a gap this large %s. That is common, so these data cannot show a real difference. The populations may still differ; there may be too few fish to tell.", p_chance(r$p))
+  if (nrow(g) > 2 && r$p < P_ALPHA && !is.null(r$pairs))
+    meaning <- paste(meaning, "The pairwise table shows which pairs differ.")
+  paste(lead, meaning)
+}
+
+
+# -----------------------------------------------------------------------------
 # 3b. TRAVEL-TIME STATISTICS AND SINGLE-RELEASE SURVIVAL (Cormack-Jolly-Seber)
 #     Ported from the manual PitPro verification script. Modeled chains:
 #       Skaha Lake / Osoyoos Lake / Okanagan Lake : release -> Rocky Reach -> Bonneville
@@ -684,7 +827,7 @@ fit_cjs <- function(H, site_names) {
   cnt <- as.integer(tabH)
   last_occ <- apply(hist_mat, 1, function(h) { w <- which(h == 1); if (length(w)) max(w) else 0L })
   npar <- if (Kd == 1) 1 else 2 * (Kd - 1) + 1
-  
+
   negll <- function(theta) {
     if (Kd == 1) { phi <- numeric(0); p <- numeric(0); lambda <- plogis(theta[1]) }
     else {
@@ -708,7 +851,7 @@ fit_cjs <- function(H, site_names) {
     }
     -ll
   }
-  
+
   opt <- NULL
   for (seed in c(0, 0.5, -0.5, 1, -1, 2, -2)) {       # several starts: keep the best optimum
     r <- tryCatch(optim(rep(seed, npar), negll, method = "BFGS", hessian = TRUE,
@@ -720,7 +863,7 @@ fit_cjs <- function(H, site_names) {
   J   <- diag(est * (1 - est), npar)
   Vth <- tryCatch(solve(opt$hessian), error = function(e) matrix(NA_real_, npar, npar))
   se  <- sqrt(pmax(diag(J %*% Vth %*% t(J)), 0))
-  
+
   arrow <- "to"
   if (Kd == 1) {
     lab  <- paste0("Lambda: survival x detection at ", site_names[1]); type <- "Lambda"
@@ -752,7 +895,7 @@ survival_group <- function(tg, sf, chain) {
     if (nrow(ot)) { f <- tapply(as.numeric(ot$first_det), ot$pit, min); ft[names(f), j] <- f }
   }
   TT <- (ft - rel) / 86400
-  
+
   rows <- list()
   add <- function(reach, x) {
     a <- arith_stats(x); h <- harm_stats(x)
@@ -939,6 +1082,15 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 .pv .pv-r span:first-child{color:var(--muted);} .pv .pv-r span:last-child{font-weight:600;color:var(--ink);text-align:right;}
 .hint{font-size:12px;color:var(--red);margin-top:6px;font-weight:600;}
 .small-note{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.4;}
+.ptest{border-top:1px solid var(--line);padding:14px 0 6px;}
+.ptest:first-child{border-top:none;padding-top:4px;}
+.ptest h4{margin:0 0 6px;font-size:14px;}
+.pbadge{display:inline-block;font-weight:700;font-size:15px;padding:3px 10px;border-radius:999px;margin:2px 8px 6px 0;color:#fff;}
+.pbadge.sig{background:var(--accent);} .pbadge.ns{background:var(--muted);}
+.pmeth{font-size:12px;color:var(--muted);}
+.pblurb{font-size:13px;line-height:1.5;margin:4px 0 8px;}
+.ptab{border-collapse:collapse;font-size:12px;margin:4px 0 8px;}
+.ptab th,.ptab td{border-bottom:1px solid var(--line);padding:4px 10px;text-align:left;}
 /* tabs as pill bar */
 .nav-pills{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;display:inline-flex;flex-wrap:wrap;margin-bottom:16px;}
 .nav-pills>li{float:none;} .nav-pills>li>a{border-radius:999px;color:var(--ink);padding:7px 15px;font-size:13px;margin:0;}
@@ -1018,13 +1170,13 @@ ui <- fluidPage(
   useShinyjs(),
   tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
-  
+
   div(class = "topbar",
       div(class = "brand", div(class = "logo"),
           div(h1("Let's Follow the Sockeye"),
               p("Okanagan fry and smolt outmigration tracker"))),
       div(class = "ver", HTML(sprintf("v%s<br>built %s GMT-7", APP_VERSION, APP_VERSION_DATE)))),
-  
+
   div(class = "layout",
       # ---------------- left pane ----------------
       tags$aside(class = "side",
@@ -1055,11 +1207,11 @@ ui <- fluidPage(
                      "Pick a population, years and dates, then press ", tags$b("Go"),
                      " to apply. Go also checks the data folder for newer exports."),
                  uiOutput("side_summary")),
-      
+
       # ---------------- pages ----------------
       tags$main(
         tabsetPanel(id = "tabs", type = "pills",
-                    
+
                     tabPanel("Overview",
                              uiOutput("hero"),
                              uiOutput("tiles"),
@@ -1069,13 +1221,13 @@ ui <- fluidPage(
                                  card("Season survival funnel",
                                       div(class = "sub", "Share of fish detected at each checkpoint, counting only fish released upstream of it."),
                                       uiOutput("funnel_overview")))),
-                    
+
                     tabPanel("Explore",
                              card("Explore the records",
                                   div(class = "sub", "Every tagged fish in the current selection. Search by tag, release location or year."),
                                   DTOutput("tbl_fish"),
                                   downloadButton("dl_fish", "Export table (CSV)", class = "btn-default"))),
-                    
+
                     tabPanel("Charts",
                              card("Fish released", plotOutput("p_year", height = "340px"),
                                   downloadButton("dl_p_year", "Export plot (PNG)", class = "btn-default")),
@@ -1092,14 +1244,14 @@ ui <- fluidPage(
                                   downloadButton("dl_t_travel", "Export table (CSV)", class = "btn-default")),
                              card("Detections through the season", plotOutput("p_weekly", height = "360px"),
                                   downloadButton("dl_p_weekly", "Export plot (PNG)", class = "btn-default"))),
-                    
+
                     tabPanel("Journeys",
                              card("Fish journeys",
                                   uiOutput("journey_intro"),
                                   uiOutput("journey_detail"),
                                   DTOutput("tbl_journeys"),
                                   downloadButton("dl_journeys", "Export table (CSV)", class = "btn-default"))),
-                    
+
                     tabPanel("Migration",
                              card("Watch the migration",
                                   div(class = "sub", "Press play or drag the date to see fish reach each checkpoint over the season."),
@@ -1123,7 +1275,7 @@ ui <- fluidPage(
                                          div(span(class = "sk sk-ring"), "Site where the fish will be detected"),
                                          div(span(class = "sk sk-fill"), "Site where it has been detected")),
                                      div(class = "spot-note", "The play button here follows this fish only, from release to its last detection. The season date above is separate.")))),
-                    
+
                     tabPanel("Recaptures",
                              card("Recaptured fish",
                                   div(class = "sub", "Fish that were caught again after release and let go a second time. Shown for reference only; they do not change detection rates, travel time or survival."),
@@ -1135,7 +1287,7 @@ ui <- fluidPage(
                              card("Recapture list",
                                   DTOutput("tbl_recap"),
                                   downloadButton("dl_recap", "Export table (CSV)", class = "btn-default"))),
-                    
+
                     tabPanel("Speed",
                              card("Who is moving fastest?",
                                   div(class = "sub", "Distance covered over time, for every fish detected at two or more checkpoints."),
@@ -1143,13 +1295,18 @@ ui <- fluidPage(
                                   radioButtons("speed_dir", NULL, c("Fastest" = "fast", "Slowest" = "slow"), inline = TRUE),
                                   uiOutput("speed_list"),
                                   downloadButton("dl_speed", "Export table (CSV)", class = "btn-default")),
-                             card("Median pace by release location", uiOutput("speed_by_site"))),
-                    
+                             card("Median pace by release location", uiOutput("speed_by_site"),
+                                  uiOutput("pace_test"))),
+
                     tabPanel("Survival",
                              card("Survival and travel time",
                                   div(class = "sub", "Travel time (arithmetic and harmonic means), survival between checkpoints, and lambda, using the Cormack-Jolly-Seber model on each release group. The Skaha Lake, Osoyoos Lake and Okanagan Lake chain is Release, Rocky Reach Dam, Bonneville Dam. The ONA Fish Hatchery chain adds Penticton and the Okanagan Channel."),
                                   radioButtons("surv_mode", NULL, inline = TRUE,
                                                c("Each release year separately" = "year", "Selected years combined" = "all"))),
+                             card("Do the selected populations differ? (p-values)",
+                                  div(class = "sub", "Compares the populations picked in the left pane. Release years in the selection are pooled."),
+                                  uiOutput("pop_tests"),
+                                  downloadButton("dl_pvals", "Export p-values (CSV)", class = "btn-default")),
                              card("Travel time (days)",
                                   plotOutput("p_tt_means", height = "auto"),
                                   downloadButton("dl_p_tt_means", "Export plot (PNG)", class = "btn-default"),
@@ -1164,7 +1321,7 @@ ui <- fluidPage(
                                   div(class = "small-note", style = "font-size:12px;",
                                       "Survival at the last checkpoint and detection there cannot be separated on a single release, so only their product, lambda, is reported. Estimates near 0% or 100%, or with a large standard error, are flagged as unstable: they reflect too few detections, not a real value.")),
                              card("Fish detected at each modeled checkpoint", tableOutput("t_surv_det"))),
-                    
+
                     tabPanel("Photos",
                              card("Photos",
                                   div(class = "photo-tools",
@@ -1184,7 +1341,7 @@ ui <- fluidPage(
 # =============================================================================
 
 server <- function(input, output, session) {
-  
+
   # ---------------- theme ----------------
   dark <- reactiveVal(FALSE)
   observeEvent(input$theme, dark(!dark()))
@@ -1194,7 +1351,7 @@ server <- function(input, output, session) {
                        label = if (dark()) "Light mode" else "Dark mode",
                        icon  = icon(if (dark()) "sun" else "moon"))
   })
-  
+
   # ---------------- data (reload on Go if files changed) ----------------
   raw <- reactiveVal(NULL)
   do_load <- function() {
@@ -1207,7 +1364,7 @@ server <- function(input, output, session) {
   }
   observeEvent(TRUE, do_load(), once = TRUE)
   observeEvent(input$go, do_load(), ignoreInit = TRUE)
-  
+
   output$year_ui <- renderUI({
     b <- raw(); req(b)
     yrs <- sort(unique(b$tag$year[!is.na(b$tag$year)]), decreasing = TRUE)
@@ -1216,7 +1373,7 @@ server <- function(input, output, session) {
                 selected = if (is.null(keep)) as.character(yrs) else intersect(keep, as.character(yrs)),
                 multiple = TRUE, width = "100%")
   })
-  
+
   # free date range (not limited to the dates in the data); starts at the span of the data
   data_span <- reactive({
     b <- raw(); req(b); rc <- recap_all()
@@ -1230,13 +1387,13 @@ server <- function(input, output, session) {
     dateRangeInput("dates", NULL, start = st, end = en, min = as.Date("2000-01-01"),
                    max = Sys.Date() + 365, format = "yyyy-mm-dd", separator = " to ", width = "100%")
   })
-  
+
   # ---------------- selection applied only when Go is pressed ----------------
   dates_ready <- reactiveVal(FALSE)
   observeEvent(input$dates, dates_ready(TRUE), once = TRUE)
   sel <- eventReactive(list(input$go, dates_ready()),
                        list(pop = input$pop, years = input$years, dates = input$dates), ignoreNULL = FALSE)
-  
+
   output$pending <- renderUI({
     s <- sel(); b <- raw(); req(b)
     all_y <- as.character(unique(b$tag$year[!is.na(b$tag$year)]))
@@ -1245,7 +1402,7 @@ server <- function(input, output, session) {
         !identical(as.character(input$dates), as.character(s$dates)))
       div(class = "hint", "Selection changed - press Go to apply.")
   })
-  
+
   # Reactive: which populations to actually filter by (handles multi-select auto-sync)
   selected_populations <- reactive({
     if ("all" %in% input$pop) {
@@ -1256,11 +1413,11 @@ server <- function(input, output, session) {
       input$pop  # Use selected individual sites
     }
   })
-  
+
   # Smart auto-sync observer: enforce exclusive mode for "All Populations"
   observeEvent(input$pop, {
     current <- input$pop
-    
+
     # Rule 1: User clicked "All Populations" alongside individual sites
     if ("all" %in% current && length(current) > 1) {
       updatePickerInput(session, "pop", selected = "all")
@@ -1275,7 +1432,7 @@ server <- function(input, output, session) {
       updatePickerInput(session, "pop", selected = new_sites)
     }
   }, ignoreInit = TRUE)
-  
+
   pop_name <- reactive({
     s <- sel()
     pops <- selected_populations()
@@ -1288,7 +1445,7 @@ server <- function(input, output, session) {
       paste(labels, collapse = ", ")
     }
   })
-  
+
   tags_f <- reactive({
     b <- raw(); req(b); s <- sel()
     tg <- b$tag
@@ -1304,7 +1461,7 @@ server <- function(input, output, session) {
   funnel_f <- reactive({ funnel_from(rate_f()) })
   fish_f   <- reactive({ b <- raw(); req(b); fish_summary(tags_f(), cp_f(), b$obs_n) })
   speed_f  <- reactive({ speed_from(cp_f(), tags_f()) })
-  
+
   # ---------------- Overview ----------------
   output$hero <- renderUI({
     tg <- tags_f(); cp <- cp_f()
@@ -1321,7 +1478,7 @@ server <- function(input, output, session) {
                   fmt_date(d1), fmt_date(d2), n_sites, if (n_sites == 1) "" else "s")),
         div(class = "big", fmt_int(n_rec)), div(class = "bigl", "detection records on file"))
   })
-  
+
   output$tiles <- renderUI({
     tg <- tags_f(); cp <- cp_f(); b <- raw(); req(b)
     n_det <- length(unique(cp$pit))
@@ -1333,7 +1490,7 @@ server <- function(input, output, session) {
         stat_tile("Checkpoints reached", length(unique(cp$cp)), sprintf("of %d", nrow(CHECKPOINTS)), "gold"),
         stat_tile("Latest data export", format(b$export_date, "%b %d, %Y")))
   })
-  
+
   output$year_bars <- renderUI({
     tg <- tags_f(); if (nrow(tg) == 0) return(div(class = "empty", "No fish in this selection."))
     d <- tg %>% count(year, site_full)
@@ -1355,14 +1512,14 @@ server <- function(input, output, session) {
         div(class = "legend", lapply(used, function(u)
           span(tags$i(style = paste0("background:", POP_FILL[u])), u))))
   })
-  
+
   output$site_bars <- renderUI({
     tg <- tags_f(); if (nrow(tg) == 0) return(div(class = "empty", "No fish in this selection."))
     d <- tg %>% count(site_full) %>% arrange(desc(n))
     bar_list(d$site_full, d$n, unname(POP_FILL[d$site_full]), fmt_int(d$n),
              sub = sprintf("%.0f%%", 100 * d$n / sum(d$n)))
   })
-  
+
   funnel_ui <- function() {
     f <- funnel_f()
     if (nrow(f) == 0) return(div(class = "empty", "No detections in this selection."))
@@ -1372,7 +1529,7 @@ server <- function(input, output, session) {
   }
   output$funnel_overview <- renderUI(funnel_ui())
   output$funnel_mig      <- renderUI(funnel_ui())
-  
+
   # ---------------- Explore ----------------
   fish_display <- reactive({
     f <- fish_f()
@@ -1386,7 +1543,7 @@ server <- function(input, output, session) {
   })
   output$tbl_fish <- renderDT(datatable(fish_display(), rownames = FALSE, filter = "top", selection = "single",
                                         options = list(pageLength = 15, scrollX = FALSE, autoWidth = FALSE)))
-  
+
   # ---------------- Charts ----------------
   bg_t <- "transparent"
   output$p_year   <- renderPlot({ req(nrow(tags_f()) > 0); gg_release_year(tags_f(), dark()) }, bg = bg_t)
@@ -1394,7 +1551,7 @@ server <- function(input, output, session) {
   output$p_count  <- renderPlot({ req(nrow(rate_f()) > 0); gg_count(rate_f(), dark()) }, bg = bg_t)
   output$p_travel <- renderPlot({ req(nrow(cp_f()) > 0); gg_travel(cp_f(), tags_f(), dark()) }, bg = bg_t)
   output$p_weekly <- renderPlot({ req(nrow(cp_f()) > 0); gg_weekly(cp_f(), dark()) }, bg = bg_t)
-  
+
   rate_tbl <- reactive({
     r <- rate_f(); if (nrow(r) == 0) return(data.frame())
     data.frame(Checkpoint = as.character(r$checkpoint), `Release location` = r$site_full,
@@ -1402,7 +1559,7 @@ server <- function(input, output, session) {
                `Detection rate (%)` = r$rate, check.names = FALSE, stringsAsFactors = FALSE)
   })
   output$t_rate <- renderTable(rate_tbl(), striped = TRUE, digits = 1)
-  
+
   travel_tbl <- reactive({
     cp <- cp_f(); tg <- tags_f(); if (nrow(cp) == 0) return(data.frame())
     d <- cp %>% inner_join(tg[, c("pit", "reldt_posix")], by = "pit")
@@ -1417,7 +1574,7 @@ server <- function(input, output, session) {
       select(Checkpoint, everything(), -idx) %>% as.data.frame(check.names = FALSE)
   })
   output$t_travel <- renderTable(travel_tbl(), striped = TRUE)
-  
+
   # ---------------- Journeys ----------------
   journeys <- reactive({
     f <- fish_f(); f <- f[f$n_cp > 0, ]
@@ -1449,7 +1606,7 @@ server <- function(input, output, session) {
                           format(steps$first_det[k], "%b %d, %Y"),
                           round(as.numeric(difftime(steps$first_det[k], j$reldt_posix, units = "days")), 1))))))
   })
-  
+
   # ---------------- Migration ----------------
   mig_range <- reactive({
     tg <- tags_f(); cp <- cp_f()
@@ -1469,7 +1626,7 @@ server <- function(input, output, session) {
   })
   observeEvent(input$mig_speed, updateSliderInput(session, "mig_date", step = as.numeric(input$mig_speed)),
                ignoreInit = TRUE)
-  
+
   mig_counts <- reactive({
     req(input$mig_date)
     cp <- cp_f()
@@ -1485,7 +1642,7 @@ server <- function(input, output, session) {
         lapply(seq_along(n), function(i) stat_tile(CHECKPOINTS$label[i], fmt_int(n[i]),
                                                    tagList("fish detected by this date", tags$br(), tags$span(style = "opacity:.75;font-size:11px;", CHECKPOINTS$desc[i])), "teal")))
   })
-  
+
   output$mig_map <- renderLeaflet({
     leaflet() %>% addTiles() %>%
       addPolylines(lng = RIVER$master$lon, lat = RIVER$master$lat, color = "#5b8db8", weight = 3, opacity = 0.7) %>%
@@ -1503,7 +1660,7 @@ server <- function(input, output, session) {
                            color = "#fff", weight = 2, fillColor = "#e2573f", fillOpacity = 0.9,
                            label = sprintf("%s (%s): %s fish detected so far", CHECKPOINTS$label, CHECKPOINTS$desc, fmt_int(n)), group = "live")
   })
-  
+
   # spotlight fish
   spot_pit <- reactiveVal(NULL)
   spot_pool <- function(site = "any", dest = "any") {
@@ -1615,7 +1772,7 @@ server <- function(input, output, session) {
             div(div(class = "n", n_pass), div(style = "font-size:11px;opacity:.8;", "checkpoints passed")),
             div(div(class = "n", round(days)), div(style = "font-size:11px;opacity:.8;", "days since release"))))
   })
-  
+
   # ---------------- Speed ----------------
   output$speed_tiles <- renderUI({
     s <- speed_f()
@@ -1645,8 +1802,65 @@ server <- function(input, output, session) {
     bar_list(m$site_full, m$med, unname(POP_FILL[m$site_full]), sprintf("%.1f km/day", m$med),
              sub = paste0("n = ", fmt_int(m$n)))
   })
-  
-  
+
+
+  # ---------------- Population comparisons (p-values) ----------------
+  pop_cmp <- reactive({
+    tg <- tags_f(); req(nrow(tg) > 0)
+    compare_pops(tg, cp_f(), speed_f())
+  })
+  n_pops_sel <- reactive(length(unique(tags_f()$site_full)))
+  need_two <- function() div(class = "empty",
+    "Select two or more populations in the left pane and press Go to compare them with a p-value.")
+
+  ptest_ui <- function(r) {
+    sig <- !is.na(r$p) && r$p < P_ALPHA
+    pairs <- r$pairs
+    div(class = "ptest",
+        h4(r$title),
+        span(class = paste("pbadge", if (sig) "sig" else "ns"), fmt_p(r$p)),
+        if (!is.na(r$p)) span(class = "pmeth",
+                              if (sig) "probably a real difference" else "no clear difference", " - ", r$method),
+        div(class = "pblurb", pop_blurb(r)),
+        if (!is.null(pairs) && nrow(pairs))
+          tags$table(class = "ptab",
+                     tags$tr(tags$th("Population"), tags$th("vs."), tags$th("p-value (Holm-adjusted)"), tags$th("Different?")),
+                     lapply(seq_len(nrow(pairs)), function(i)
+                       tags$tr(tags$td(pairs$a[i]), tags$td(pairs$b[i]), tags$td(fmt_p(pairs$p[i])),
+                               tags$td(if (pairs$p[i] < P_ALPHA) "Probably" else "No clear difference")))),
+        if (length(r$dropped)) div(class = "pmeth", sprintf("Left out (fewer than %d fish): %s.",
+                                                            MIN_FISH_TEST, paste(r$dropped, collapse = "; "))))
+  }
+  pvals_note <- div(class = "small-note", style = "font-size:12px;",
+    "How to read this: a p-value is how often chance alone would produce a gap this large if the populations really did not differ. ",
+    "Under 0.05 (highlighted) is the usual cut-off for \"probably real\". A p-value does not say how big or how important a gap is, ",
+    "and it does not say what caused it: release timing, fish size and route also differ between populations. ",
+    "Detection at Rocky Reach mixes survival with the chance of being detected, so it is not a survival estimate. ",
+    "Hatchery fish start upstream at Penticton, so their pace covers a longer stretch of river than lake fish.")
+
+  output$pop_tests <- renderUI({
+    if (n_pops_sel() < 2) return(need_two())
+    r <- pop_cmp()
+    div(ptest_ui(r$detect), ptest_ui(r$days), ptest_ui(r$pace), pvals_note)
+  })
+  output$pace_test <- renderUI({
+    if (n_pops_sel() < 2) return(NULL)
+    div(style = "margin-top:10px;", ptest_ui(pop_cmp()$pace))
+  })
+  pvals_tbl <- reactive({
+    if (n_pops_sel() < 2) return(data.frame(Note = "Select two or more populations to compare."))
+    r <- pop_cmp()
+    do.call(rbind, lapply(r, function(x) {
+      main <- data.frame(Measure = x$title, Comparison = "All selected populations", Test = nz(x$method, NA),
+                         `p-value` = signif(x$p, 4), Summary = pop_blurb(x), check.names = FALSE, stringsAsFactors = FALSE)
+      if (!is.null(x$pairs) && nrow(x$pairs))
+        main <- rbind(main, data.frame(Measure = x$title, Comparison = paste(x$pairs$a, "vs.", x$pairs$b),
+                                       Test = "pairwise, Holm-adjusted", `p-value` = signif(x$pairs$p, 4), Summary = "",
+                                       check.names = FALSE, stringsAsFactors = FALSE))
+      main
+    }))
+  })
+
   # ---------------- Survival ----------------
   surv_res <- reactive({
     b <- raw(); req(b); tg <- tags_f(); req(nrow(tg) > 0)
@@ -1673,7 +1887,7 @@ server <- function(input, output, session) {
   surv_long <- reactive(bind_part("cjs"))
   tt_long   <- reactive(bind_part("tt"))
   det_long  <- reactive(bind_part("det"))
-  
+
   surv_plot_rows <- reactive({ d <- surv_long(); if (nrow(d) == 0) 0 else sum(d$type != "Detection") })
   tt_plot_rows   <- reactive({ d <- tt_long();   if (nrow(d) == 0) 0 else sum(d$n > 0) })
   output$p_surv <- renderPlot({
@@ -1682,7 +1896,7 @@ server <- function(input, output, session) {
   output$p_tt_means <- renderPlot({
     d <- tt_long(); req(nrow(d) > 0); gg_tt_means(d, dark())
   }, height = function() plot_rows_height(tt_plot_rows(), per = 34), bg = "transparent")
-  
+
   surv_tbl <- reactive({
     d <- surv_long(); if (nrow(d) == 0) return(data.frame())
     data.frame(`Release group` = d$group_label, `Fish released` = d$n_released, Parameter = d$parameter,
@@ -1709,8 +1923,8 @@ server <- function(input, output, session) {
     data.frame(`Release group` = d$group_label, `Fish released` = d$n_released,
                Checkpoint = d$site, `Fish detected` = d$fish_detected, check.names = FALSE)
   }, striped = TRUE)
-  
-  
+
+
   # ---------------- Recaptures (display only) ----------------
   recap_all <- reactiveVal(NULL)
   observeEvent(TRUE, recap_all(tryCatch(load_recaptures(DATA_DIR), error = function(e) NULL)), once = TRUE)
@@ -1769,8 +1983,8 @@ server <- function(input, output, session) {
     m %>% fitBounds(min(c(r$rel_lon, r$recap_lon)) - 0.3, min(c(r$rel_lat, r$recap_lat)) - 0.3,
                     max(c(r$rel_lon, r$recap_lon)) + 0.3, max(c(r$rel_lat, r$recap_lat)) + 0.3)
   })
-  
-  
+
+
   # ---------------- Left-pane selection summary (static, updates on Go) ----------------
   pv_rows <- function(...) {
     x <- list(...); div(lapply(seq(1, length(x), by = 2), function(i) div(class = "pv-r", span(x[[i]]), span(x[[i + 1]]))))
@@ -1794,8 +2008,8 @@ server <- function(input, output, session) {
                 "Median days to Bonneville Dam", if (is.na(med)) "-" else sprintf("%.1f", med),
                 "Recaptured", if (is.na(nrc)) "-" else fmt_int(nrc)))
   })
-  
-  
+
+
   # ---------------- Photos (read from GitHub) ----------------
   photos <- reactiveVal(NULL)          # NULL = not loaded, "error" = unreachable
   load_photos <- function() {
@@ -1849,7 +2063,7 @@ server <- function(input, output, session) {
                           div(class = "pmodal", tags$img(src = r$url, alt = r$caption),
                               p(style = "margin-top:10px;font-size:12px;", tags$a(href = r$url, target = "_blank", "Open original")))))
   })
-  
+
   # ---------------- Exports (light theme, versioned, GMT-7 stamp) ----------------
   stamp <- function() tz_now("%m%d%Y_%H%M%S")
   # every exported plot carries a visible footer: population, years, version, date and time (GMT-7)
@@ -1868,7 +2082,7 @@ server <- function(input, output, session) {
   dl_csv <- function(name, getter)
     downloadHandler(filename = function() sprintf("%s_v%s_%s.csv", name, APP_VERSION, stamp()),
                     content  = function(file) write.csv(getter(), file, row.names = FALSE))
-  
+
   output$dl_p_year   <- dl_png("fish_released_by_year", function() gg_release_year(tags_f(), FALSE))
   output$dl_p_rate   <- dl_png("detection_rate",        function() gg_rate(rate_f(), FALSE))
   output$dl_p_count  <- dl_png("fish_detected",         function() gg_count(rate_f(), FALSE))
@@ -1879,6 +2093,7 @@ server <- function(input, output, session) {
   output$dl_p_surv     <- dl_png("survival_lambda",        function() gg_surv(surv_long(), FALSE), h = max(5, plot_rows_height(surv_plot_rows()) / 80))
   output$dl_p_tt_means <- dl_png("travel_time_means",      function() gg_tt_means(tt_long(), FALSE), h = max(5, plot_rows_height(tt_plot_rows(), per = 34) / 80))
   output$dl_t_surv     <- dl_csv("survival_lambda_table",  surv_tbl)
+  output$dl_pvals      <- dl_csv("population_p_values",    pvals_tbl)
   output$dl_t_tt_means <- dl_csv("travel_time_mean_table", tt_tbl)
   output$dl_fish     <- dl_csv("tag_records",           fish_display)
   output$dl_recap <- dl_csv("recaptured_fish", function() recap_tbl())

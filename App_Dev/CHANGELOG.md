@@ -1,23 +1,3 @@
-### **v0.13.0 — Multi-Select Population Picker** (2026-10-01)
-
-**Added**
-- **Population selector** (left pane) now uses pickerInput() with multi-select: pick any combination of release sites or "All Populations" for convenience
-- Smart auto-sync: selecting "All Populations" locks it (can't mix with individual sites); selecting all 6 individual sites auto-converts to "All Populations"
-- Individual populations (Equesis Creek, Mission Creek, Shingle Creek, Skaha Lake, Osoyoos Lake, Okanagan Lake) can be freely toggled in any combination when "All Populations" is deselected
-- Population display shows comma-separated list of selected sites (e.g., "Equesis Creek, Skaha Lake") or "All populations" if all 6 are selected
-
-**Changed**
-- Left-pane layout: Population selector is now a compact pickerInput with search (liveSearch), action buttons (Select All / Deselect All), and count display ("3 sites selected")
-
-**Technical**
-- Added INDIVIDUAL_SITES constant (all 6 release site codes)
-- Added selected_populations() reactive: enforces "All Populations" exclusivity and returns the actual sites to filter by
-- Added smart observeEvent() with 3 rules for auto-sync behavior
-- Updated 	ags_f() filtering: now uses 	g[tg %in% pops_to_filter, ] instead of single-site filter
-- Updated pop_name() to display comma-separated site labels or "All populations"
-- Requires shinyWidgets library (added to suppressPackageStartupMessages)
-
----
 # Version tracker - Let's Follow the Sockeye
 
 Every change to `app.R` gets a version here. Newest first. Times are GMT-7.
@@ -29,6 +9,15 @@ How to record a change (in this order):
 3. Run `Rscript tools/check_version.R` from the project folder; it confirms the two match.
 
 Entry types: Added, Changed, Fixed, Removed.
+
+## 0.14.0 - 2026-11-02
+- Added: population comparisons with p-values. The Survival tab has a new card, "Do the selected populations differ? (p-values)", that compares the populations picked in the left pane on three measures: share of tagged fish detected at Rocky Reach Dam or farther downstream (Fisher's exact test for two populations, chi-squared for three or more), days from release to Rocky Reach Dam, and pace in km/day (Wilcoxon rank-sum for two populations, Kruskal-Wallis for three or more). With three or more populations a pairwise table (Holm-adjusted) shows which pairs differ. Each result has a plain-language summary of what the p-value means for that selection, plus an "Export p-values (CSV)" button.
+- Added: the pace p-value also shows on the Speed tab under "Median pace by release location".
+- Populations with fewer than 3 fish for a measure are left out of that test and listed. Release years in the selection are pooled. With one population selected, the card asks for two or more.
+
+## 0.13.0 - 2026-10-01
+- Added: the Population picker in the left pane is now multi-select. Pick any combination of release sites, or "All Populations". Choosing "All Populations" clears the individual sites; ticking all six sites switches back to "All Populations". Search box, Select All / Deselect All buttons and a count of sites selected. Needs the shinyWidgets package.
+- Fixed: CHANGELOG.md entry for 0.13.0 had been added above the file header with garbled characters; moved here in the standard format.
 
 ## 0.12.1 - 2026-09-30
 - Fixed: photo library address now uses the correct GitHub account name (`MacusOng/sockeye-tracker-photos`).
