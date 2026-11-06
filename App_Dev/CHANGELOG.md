@@ -10,6 +10,11 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.17.0 - 2026-11-05
+- Added: Settings pane in the left panel (Filters / Settings switch at the top). Eight colour themes (Classic, Light, Dark, Midnight, Graphite, Forest, Sand, High Contrast), "Follow the sun" (Auto switches between Light and Dark at sunrise and sunset in Penticton; choosing a theme by hand switches it off) and an interface font picker using system typefaces only, with a live preview. Settings are saved in the viewer's browser.
+- Removed: the Dark mode / Light mode button at the top of the left panel (replaced by the themes). Charts and the map still switch to dark styling with any dark theme.
+- Fixed: stray space before the full stop in the "May still be migrating" warning.
+
 ## 0.16.0 - 2026-11-02
 - Added: "may still be migrating" check on the p-value cards (Survival and Speed tabs). For each release site and year, the dashboard compares the days between release and the end of the data (latest detection in that export) with how long that site's fish usually take to reach Rocky Reach Dam (90th percentile from earlier release years; calendar fallback when there is no history: hatchery fry complete after July 31 of the next year, lake and screw-trap fish after August 31 of the release year). Flagged groups get a warning and are left out of the p-value tests by default; a tick box puts them back in.
 - Added: print layout. Printing or saving the page as PDF no longer draws the left pane over the content, and download buttons are hidden.

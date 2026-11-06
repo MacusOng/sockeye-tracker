@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.16.0"
+APP_VERSION      <- "0.17.0"
 APP_TIMEZONE     <- "Etc/GMT+7"                       # = UTC-7 (GMT-7)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -1139,9 +1139,27 @@ card <- function(title, ..., right = NULL, class = NULL)
 
 APP_CSS <- "
 :root{--bg:#f3efe8;--card:#fffdf8;--ink:#1f2a2b;--muted:#6b7776;--line:#e7e1d5;--accent:#1f7a6d;--accent2:#175e54;
---gold:#d4a24c;--red:#e2573f;--blue:#3d7ea6;--soft:#efe9dc;}
+--gold:#d4a24c;--red:#e2573f;--blue:#3d7ea6;--soft:#efe9dc;--on-accent:#fff;}
 body.dark{--bg:#171a1d;--card:#23272b;--ink:#e8ecef;--muted:#9aa5ab;--line:#343a40;--accent:#3fb3a1;--accent2:#2d8f80;--soft:#2d3237;}
-body{background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+body{background:var(--bg);color:var(--ink);font-family:var(--font,'Segoe UI',system-ui,-apple-system,sans-serif);}
+button,select,input,textarea{font-family:inherit;}
+.side-tabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:999px;margin-bottom:14px;}
+.st-b{flex:1;border:0;background:transparent;color:var(--muted);border-radius:999px;padding:6px 8px;font-weight:600;font-size:13px;}
+.st-b.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18);}
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.theme-card{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:6px;text-align:left;color:var(--ink);cursor:pointer;}
+.theme-card:hover{border-color:var(--muted);}
+.theme-card.on{border:2px solid var(--accent);padding:5px;}
+.theme-card .sw{display:flex;height:26px;border-radius:6px;overflow:hidden;margin-bottom:5px;border:1px solid rgba(127,127,127,.25);}
+.theme-card .sw span{flex:1;} .theme-card .tn{font-size:12px;font-weight:700;}
+.set-t{font-weight:700;font-size:14px;color:var(--ink);} .set-d{font-size:11.5px;color:var(--muted);line-height:1.4;}
+.sun-row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:4px 0 4px;}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;padding:2px;flex:none;}
+.seg-b{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;}
+.seg-b.on{background:var(--accent);color:var(--on-accent);}
+#sun_status{margin-bottom:14px;}
+#font_pick{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;width:100%;padding:6px 8px;margin-top:6px;}
+.font-prev{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:10px;font-size:13px;line-height:1.5;margin:8px 0;color:var(--ink);}
 .container-fluid{max-width:1400px;padding:0 20px 40px;}
 h1,h2,h3,h4{color:var(--ink);}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 0 10px;}
@@ -1155,8 +1173,8 @@ border-radius:8px;padding:5px 10px;line-height:1.35;}
 aside.side{position:sticky;top:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;}
 aside.side h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;}
 aside.side .form-group{margin-bottom:12px;} aside.side label{font-size:12px;color:var(--muted);font-weight:600;}
-.btn.btn-go{width:100%;background:var(--accent);color:#fff;border:0;border-radius:10px;font-weight:700;padding:9px;font-size:15px;}
-.btn.btn-go:hover,.btn.btn-go:focus{background:var(--accent2);color:#fff;}
+.btn.btn-go{width:100%;background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;font-weight:700;padding:9px;font-size:15px;}
+.btn.btn-go:hover,.btn.btn-go:focus{background:var(--accent2);color:var(--on-accent);}
 .btn-soft{width:100%;background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:10px;margin-top:8px;}
 table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,109,.28) !important;color:var(--ink) !important;}
 .btn-top{margin:0 0 14px !important;}
@@ -1171,7 +1189,7 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 .ptest:first-child{border-top:none;padding-top:4px;}
 .ptest h4{margin:0 0 6px;font-size:14px;}
 .pbadge{display:inline-block;font-weight:700;font-size:15px;padding:3px 10px;border-radius:999px;margin:2px 8px 6px 0;color:#fff;}
-.pbadge.sig{background:var(--accent);} .pbadge.ns{background:var(--muted);}
+.pbadge.sig{background:var(--accent);color:var(--on-accent);} .pbadge.ns{background:var(--muted);color:var(--bg);}
 .pmeth{font-size:12px;color:var(--muted);}
 .pblurb{font-size:13px;line-height:1.5;margin:4px 0 8px;}
 .ptab{border-collapse:collapse;font-size:12px;margin:4px 0 8px;}
@@ -1186,7 +1204,7 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 /* tabs as pill bar */
 .nav-pills{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px;display:inline-flex;flex-wrap:wrap;margin-bottom:16px;}
 .nav-pills>li{float:none;} .nav-pills>li>a{border-radius:999px;color:var(--ink);padding:7px 15px;font-size:13px;margin:0;}
-.nav-pills>li.active>a,.nav-pills>li.active>a:hover,.nav-pills>li.active>a:focus{background:var(--accent);color:#fff;}
+.nav-pills>li.active>a,.nav-pills>li.active>a:hover,.nav-pills>li.active>a:focus{background:var(--accent);color:var(--on-accent);}
 .nav-pills>li>a:hover{background:var(--soft);}
 main,.layout>main{min-width:0;}
 .card{min-width:0;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
@@ -1258,9 +1276,129 @@ body.dark .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92)
 .mig-controls{display:grid;grid-template-columns:1fr 190px;gap:16px;align-items:end;}
 "
 
+# -----------------------------------------------------------------------------
+# Settings: colour themes, follow-the-sun, interface font (all saved per browser)
+# -----------------------------------------------------------------------------
+mk_theme <- function(id, name, dark, bg, card, soft, line, ink, muted, accent, accent2, on, sw)
+  list(id = id, name = name, dark = dark, sw = sw,
+       vars = list(bg = bg, card = card, soft = soft, line = line, ink = ink, muted = muted,
+                   accent = accent, accent2 = accent2, `on-accent` = on))
+THEMES <- list(
+  mk_theme("classic",  "Classic",  FALSE, "#f3efe8", "#fffdf8", "#efe9dc", "#e7e1d5", "#1f2a2b", "#6b7776", "#1f7a6d", "#175e54", "#ffffff",
+           c("#f3efe8", "#fffdf8", "#efe9dc", "#1f7a6d", "#1f2a2b")),
+  mk_theme("light",    "Light",    FALSE, "#eef1f6", "#ffffff", "#e5e9f2", "#d7dce6", "#18243d", "#5d6779", "#c3272f", "#a01f26", "#ffffff",
+           c("#eef1f6", "#ffffff", "#e5e9f2", "#c3272f", "#18243d")),
+  mk_theme("dark",     "Dark",     TRUE,  "#0c0c0d", "#18181b", "#222226", "#2f2f35", "#f0f0f0", "#a1a1aa", "#c3272f", "#a01f26", "#ffffff",
+           c("#0c0c0d", "#18181b", "#222226", "#c3272f", "#f0f0f0")),
+  mk_theme("midnight", "Midnight", TRUE,  "#070b18", "#0f1730", "#18223f", "#25315a", "#e8edfb", "#9aa6c8", "#8ab4ff", "#6f9cf0", "#0a1226",
+           c("#070b18", "#0f1730", "#1b2547", "#8ab4ff", "#e8edfb")),
+  mk_theme("graphite", "Graphite", TRUE,  "#121212", "#1c1c1c", "#262626", "#343434", "#ececec", "#a3a3a3", "#c3272f", "#a01f26", "#ffffff",
+           c("#121212", "#1c1c1c", "#262626", "#c3272f", "#ececec")),
+  mk_theme("forest",   "Forest",   TRUE,  "#0a120e", "#11211a", "#1a3026", "#25402f", "#e6f4ea", "#9ec2ab", "#6fd39c", "#52b982", "#0a1a12",
+           c("#0a120e", "#11211a", "#1a3026", "#6fd39c", "#e6f4ea")),
+  mk_theme("sand",     "Sand",     FALSE, "#ebe3d6", "#fbf8f1", "#e4dccb", "#d6cbb5", "#2b2316", "#6f6454", "#8b5a1e", "#6f4716", "#ffffff",
+           c("#ebe3d6", "#fbf8f1", "#e4dccb", "#8b5a1e", "#2b2316")),
+  mk_theme("contrast", "High Contrast", TRUE, "#000000", "#0b0b0b", "#161616", "#6a6a6a", "#ffffff", "#dcdcdc", "#ffd400", "#e6bf00", "#000000",
+           c("#000000", "#0b0b0b", "#161616", "#ffd400", "#ffffff"))
+)
+names(THEMES) <- vapply(THEMES, function(t) t$id, "")
+FONTS <- list(
+  list(id = "segoe",   name = "Segoe UI (default)",          stack = "'Segoe UI',system-ui,-apple-system,sans-serif"),
+  list(id = "system",  name = "System UI",                   stack = "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"),
+  list(id = "arial",   name = "Arial / Helvetica",           stack = "Arial,Helvetica,sans-serif"),
+  list(id = "verdana", name = "Verdana (wide, easy to read)", stack = "Verdana,Geneva,sans-serif"),
+  list(id = "trebuc",  name = "Trebuchet MS",                stack = "'Trebuchet MS',Tahoma,sans-serif"),
+  list(id = "georgia", name = "Georgia (serif)",             stack = "Georgia,'Times New Roman',serif"),
+  list(id = "mono",    name = "Consolas (monospace)",        stack = "Consolas,'Courier New',monospace")
+)
+SETTINGS_JS <- sprintf("
+(function(){
+  var T = %s, F = %s, LAT = 49.49, LON = -119.59;
+  function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e) { return null; } }
+  function $$(q){ return Array.prototype.slice.call(document.querySelectorAll(q)); }
+  function apply(id){
+    var t = T[id] || T.classic, b = document.body;
+    for (var k in t.vars) b.style.setProperty('--' + k, t.vars[k]);
+    b.classList.toggle('dark', !!t.dark); b.setAttribute('data-theme', t.id);
+    $$('.theme-card').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-theme') === t.id); });
+    window.__stsDark = !!t.dark;
+    if (window.Shiny && Shiny.setInputValue) Shiny.setInputValue('ui_dark', !!t.dark);
+  }
+  /* sunrise / sunset at Penticton (sunrise equation, ~1-2 min accuracy) */
+  function sun(d){
+    var r = Math.PI / 180, jd = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12) / 864e5 + 2440587.5;
+    var n = Math.round(jd - 2451545), J = n - LON / 360;
+    var M = (357.5291 + 0.98560028 * J) %% 360;
+    var C = 1.9148 * Math.sin(M * r) + 0.02 * Math.sin(2 * M * r) + 0.0003 * Math.sin(3 * M * r);
+    var L = (M + C + 282.9372) %% 360;
+    var Jt = 2451545 + J + 0.0053 * Math.sin(M * r) - 0.0069 * Math.sin(2 * L * r);
+    var dec = Math.asin(Math.sin(L * r) * Math.sin(23.44 * r));
+    var cw = (Math.sin(-0.833 * r) - Math.sin(LAT * r) * Math.sin(dec)) / (Math.cos(LAT * r) * Math.cos(dec));
+    var w = Math.acos(Math.max(-1, Math.min(1, cw))) / r;
+    return [(Jt - w / 360 - 2440587.5) * 864e5, (Jt + w / 360 - 2440587.5) * 864e5];
+  }
+  function hm(ms){ return new Date(ms).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}); }
+  function sunTick(){
+    var st = document.getElementById('sun_status');
+    if (ls('sts_sun') !== 'auto') { if (st) st.textContent = ''; return; }
+    var s = sun(new Date()), now = Date.now(), up = now >= s[0] && now < s[1];
+    apply(up ? 'light' : 'dark');
+    if (st) st.textContent = 'Penticton today: sunrise ' + hm(s[0]) + ', sunset ' + hm(s[1]) + '. Now showing ' + (up ? 'Light' : 'Dark') + '.';
+  }
+  function setSun(m){
+    ls('sts_sun', m);
+    $$('.seg-b').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-sun') === m); });
+    if (m === 'auto') sunTick(); else { apply(ls('sts_theme') || 'classic'); sunTick(); }
+  }
+  function setFont(id){
+    var f = F.filter(function(x){ return x.id === id; })[0] || F[0];
+    document.body.style.setProperty('--font', f.stack); ls('sts_font', f.id);
+    var sel = document.getElementById('font_pick'); if (sel) sel.value = f.id;
+  }
+  function pane(p){
+    $$('.st-b').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-pane') === p); });
+    var a = document.getElementById('side_filters'), b = document.getElementById('side_settings');
+    if (a) a.style.display = p === 'filters' ? '' : 'none';
+    if (b) b.style.display = p === 'settings' ? '' : 'none';
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    $$('.theme-card').forEach(function(c){ c.addEventListener('click', function(){
+      ls('sts_theme', c.getAttribute('data-theme')); setSun('off'); }); });
+    $$('.seg-b').forEach(function(b){ b.addEventListener('click', function(){ setSun(b.getAttribute('data-sun')); }); });
+    $$('.st-b').forEach(function(b){ b.addEventListener('click', function(){ pane(b.getAttribute('data-pane')); }); });
+    var sel = document.getElementById('font_pick');
+    if (sel) sel.addEventListener('change', function(){ setFont(sel.value); });
+    setFont(ls('sts_font') || 'segoe');
+    setSun(ls('sts_sun') || 'off');
+    setInterval(sunTick, 5 * 60 * 1000);
+  });
+  $(document).on('shiny:connected', function(){ Shiny.setInputValue('ui_dark', !!window.__stsDark); });
+})();
+", jsonlite::toJSON(THEMES, auto_unbox = TRUE), jsonlite::toJSON(FONTS, auto_unbox = TRUE))
+
+settings_ui <- div(id = "side_settings", style = "display:none;",
+  h4("Theme"),
+  div(class = "theme-grid", lapply(THEMES, function(t)
+    tags$button(type = "button", class = "theme-card", `data-theme` = t$id,
+                div(class = "sw", lapply(t$sw, function(c) span(style = paste0("background:", c, ";")))),
+                div(class = "tn", t$name)))),
+  div(class = "sun-row",
+      div(div(class = "set-t", "Follow the sun"),
+          div(class = "set-d", "Light while the sun is up over Penticton, dark once it sets. Choosing a theme by hand switches this off.")),
+      div(class = "seg", tags$button(type = "button", class = "seg-b", `data-sun` = "off", "Off"),
+          tags$button(type = "button", class = "seg-b", `data-sun` = "auto", "Auto"))),
+  div(id = "sun_status", class = "set-d"),
+  h4("Interface font"),
+  div(class = "set-d", "System typefaces only - nothing extra is downloaded. Charts keep their own font."),
+  tags$select(id = "font_pick", lapply(FONTS, function(f) tags$option(value = f$id, f$name))),
+  div(class = "font-prev",
+      div(tags$b("SKATAL-2025-0412"), " - Skaha Lake release - 2,143 fish - crew of 3"),
+      div("The quick brown fox jumps over the lazy dog 0123456789")),
+  div(class = "small-note", "Settings are saved in this browser only."))
+
 ui <- fluidPage(
   useShinyjs(),
-  tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)),
+  tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
 
   div(class = "topbar",
@@ -1272,7 +1410,10 @@ ui <- fluidPage(
   div(class = "layout",
       # ---------------- left pane ----------------
       tags$aside(class = "side",
-                 actionButton("theme", "Dark mode", icon = icon("moon"), class = "btn-soft btn-top"),
+                 div(class = "side-tabs",
+                     tags$button(type = "button", class = "st-b on", `data-pane` = "filters", icon("filter"), " Filters"),
+                     tags$button(type = "button", class = "st-b", `data-pane` = "settings", icon("gear"), " Settings")),
+                 div(id = "side_filters",
                  h4("Population"),
                  pickerInput(
                    inputId = "pop",
@@ -1299,6 +1440,7 @@ ui <- fluidPage(
                      "Pick a population, years and dates, then press ", tags$b("Go"),
                      " to apply. Go also checks the data folder for newer exports."),
                  uiOutput("side_summary")),
+                 settings_ui),
 
       # ---------------- pages ----------------
       tags$main(
@@ -1437,14 +1579,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
 
   # ---------------- theme ----------------
-  dark <- reactiveVal(FALSE)
-  observeEvent(input$theme, dark(!dark()))
-  observe({
-    toggleClass(selector = "body", class = "dark", condition = dark())
-    updateActionButton(session, "theme",
-                       label = if (dark()) "Light mode" else "Dark mode",
-                       icon  = icon(if (dark()) "sun" else "moon"))
-  })
+  # set in the browser by the Settings pane (theme or follow-the-sun); TRUE = dark theme
+  dark <- reactive(isTRUE(input$ui_dark))
 
   # ---------------- data (reload on Go if files changed) ----------------
   raw <- reactiveVal(NULL)
@@ -1916,7 +2052,7 @@ server <- function(input, output, session) {
                          f$site_full, f$year, format(f$released, "%b %d, %Y"), format(f$cutoff, "%b %d, %Y"),
                          round(f$elapsed), round(f$threshold)), collapse = "; ")
     div(class = "mig-warn",
-        strong("May still be migrating: "), who, ". ",
+        strong("May still be migrating: "), paste0(who, ". "),
         "Fewer days have passed between release and the end of the data than these fish usually take to reach Rocky Reach Dam, so a low detection rate may reflect timing, not survival. ",
         if (incl_mig()) "They are included in the tests below because the box above is ticked."
         else "They are left out of the tests below; tick the box above to include them.")
