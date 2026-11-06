@@ -1,6 +1,6 @@
 # Version tracker - Let's Follow the Sockeye
 
-Every change to `app.R` gets a version here. Newest first. Times are GMT-7.
+Every change to `app.R` gets a version here. Newest first. Times are UTC (GMT-7 before 0.18.0).
 MAJOR.MINOR.PATCH: new feature or tab = minor, fix or small change = patch, breaking redesign = major.
 
 How to record a change (in this order):
@@ -9,6 +9,10 @@ How to record a change (in this order):
 3. Run `Rscript tools/check_version.R` from the project folder; it confirms the two match.
 
 Entry types: Added, Changed, Fixed, Removed.
+
+## 0.18.0 - 2026-11-06
+- Added: screensaver. When the page sits idle (1, 2, 5, 10 or 15 minutes, set in Settings), it shows a large UTC clock and/or a slideshow of the photo library (new photo every 8 seconds, with captions). Modes: Clock + photos (default), Clock only, Photos only, Off, plus a Preview button. Any mouse move, click, key or touch returns to the dashboard. Runs in the browser only, so it does not keep the shinyapps.io session awake.
+- Changed: all app times are now UTC instead of GMT-7 (version box, export file names, plot footers and the Follow-the-sun sunrise/sunset times), because local time-zone rules are unsettled. Times in the PTAGIS data were already handled as UTC.
 
 ## 0.17.0 - 2026-11-05
 - Added: Settings pane in the left panel (Filters / Settings switch at the top). Eight colour themes (Classic, Light, Dark, Midnight, Graphite, Forest, Sand, High Contrast), "Follow the sun" (Auto switches between Light and Dark at sunrise and sunset in Penticton; choosing a theme by hand switches it off) and an interface font picker using system typefaces only, with a live preview. Settings are saved in the viewer's browser.

@@ -35,8 +35,8 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.17.0"
-APP_TIMEZONE     <- "Etc/GMT+7"                       # = UTC-7 (GMT-7)
+APP_VERSION      <- "0.18.0"
+APP_TIMEZONE     <- "UTC"                             # all app times are UTC (local time-zone rules unsettled)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
 
@@ -1159,6 +1159,23 @@ button,select,input,textarea{font-family:inherit;}
 .seg-b.on{background:var(--accent);color:var(--on-accent);}
 #sun_status{margin-bottom:14px;}
 #font_pick{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;width:100%;padding:6px 8px;margin-top:6px;}
+#ss{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;background:#000;display:none;cursor:none;overflow:hidden;}
+#ss.on{display:block;}
+#ss .ss-img{position:absolute;top:0;left:0;right:0;bottom:0;background:#000 center/contain no-repeat;opacity:0;transition:opacity 1.6s ease;}
+#ss .ss-img.show{opacity:1;}
+#ss .ss-shade{position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(0,0,0,.7),rgba(0,0,0,0) 45%);}
+#ss .ss-clock{position:absolute;left:5vw;bottom:8vh;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6);}
+#ss .ss-time{font-size:min(15vw,168px);font-weight:300;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+#ss .ss-time .ss-sec{opacity:.55;font-size:.45em;} #ss .ss-time small{font-size:.2em;font-weight:700;margin-left:.4em;opacity:.8;letter-spacing:.08em;}
+#ss .ss-date{font-size:min(3.2vw,28px);opacity:.9;margin-top:8px;}
+#ss .ss-cap{position:absolute;right:4vw;bottom:5vh;color:#fff;font-size:15px;opacity:.85;max-width:42vw;text-align:right;text-shadow:0 1px 8px rgba(0,0,0,.7);}
+#ss .ss-hint{position:absolute;top:3vh;left:0;right:0;text-align:center;color:rgba(255,255,255,.45);font-size:13px;}
+#ss.clock-only{background:var(--bg);} #ss.clock-only .ss-img,#ss.clock-only .ss-shade,#ss.clock-only .ss-cap{display:none;}
+#ss.clock-only .ss-clock{left:0;right:0;bottom:auto;top:50%;transform:translateY(-50%);text-align:center;color:var(--ink);text-shadow:none;}
+#ss.clock-only .ss-hint{color:var(--muted);}
+#ss.photos-only .ss-clock{display:none;}
+.ss-row{display:flex;gap:8px;margin-top:6px;} .ss-row select{flex:1;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;}
+#ss_preview{margin-top:8px;}
 .font-prev{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:10px;font-size:13px;line-height:1.5;margin:8px 0;color:var(--ink);}
 .container-fluid{max-width:1400px;padding:0 20px 40px;}
 h1,h2,h3,h4{color:var(--ink);}
@@ -1337,7 +1354,7 @@ SETTINGS_JS <- sprintf("
     var w = Math.acos(Math.max(-1, Math.min(1, cw))) / r;
     return [(Jt - w / 360 - 2440587.5) * 864e5, (Jt + w / 360 - 2440587.5) * 864e5];
   }
-  function hm(ms){ return new Date(ms).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'}); }
+  function hm(ms){ return new Date(ms).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', timeZone: 'UTC'}) + ' UTC'; }
   function sunTick(){
     var st = document.getElementById('sun_status');
     if (ls('sts_sun') !== 'auto') { if (st) st.textContent = ''; return; }
@@ -1376,6 +1393,86 @@ SETTINGS_JS <- sprintf("
 })();
 ", jsonlite::toJSON(THEMES, auto_unbox = TRUE), jsonlite::toJSON(FONTS, auto_unbox = TRUE))
 
+# Screensaver: after the page sits idle, show a UTC clock and/or a slideshow of the
+# photo library (MacusOng/sockeye-tracker-photos). Any mouse move, click, key or touch
+# returns to the dashboard. It runs in the browser only and does not keep the
+# shinyapps.io session awake.
+SS_JS <- "
+(function(){
+  var P = [], idx = 0, timer = null, slide = null, tick = null, active = false, sx = null, sy = null, layer = 0;
+  function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e) { return null; } }
+  function el(id){ return document.getElementById(id); }
+  function mode(){ return ls('sts_ss') || 'both'; }
+  function mins(){ var m = parseFloat(ls('sts_ss_min') || '5'); return isFinite(m) && m > 0 ? m : 5; }
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function clock(){
+    var d = new Date();
+    el('ss_time').innerHTML = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) +
+      '<span class=\"ss-sec\">:' + pad(d.getUTCSeconds()) + '</span><small>UTC</small>';
+    el('ss_date').textContent = d.toLocaleDateString('en-GB', {timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+  }
+  function shuffle(a){ for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function next(){
+    if (!P.length) return;
+    var p = P[idx % P.length]; idx++;
+    var im = new Image();
+    im.onload = function(){
+      if (!active) return;
+      var a = el('ss_img' + layer), b = el('ss_img' + (1 - layer));
+      b.style.backgroundImage = 'url(\"' + p.url + '\")'; b.classList.add('show'); a.classList.remove('show');
+      layer = 1 - layer; el('ss_cap').textContent = p.caption || '';
+    };
+    im.src = p.url;
+  }
+  function start(force){
+    var m = force || mode(); if (m === 'off') return;
+    var photos = (m === 'photos' || m === 'both') && P.length > 0;
+    el('ss').className = 'on ' + (photos ? (m === 'photos' ? 'photos-only' : 'both') : 'clock-only');
+    active = true; sx = null; clock(); clearInterval(tick); tick = setInterval(clock, 1000);
+    clearInterval(slide); if (photos) { shuffle(P); idx = 0; next(); slide = setInterval(next, 8000); }
+  }
+  function stop(){
+    active = false; el('ss').className = ''; clearInterval(tick); clearInterval(slide);
+    ['ss_img0', 'ss_img1'].forEach(function(i){ el(i).classList.remove('show'); });
+    arm();
+  }
+  function arm(){ clearTimeout(timer); if (mode() !== 'off') timer = setTimeout(function(){ start(); }, mins() * 60000); }
+  function activity(e){
+    if (active) {
+      if (e.type === 'mousemove') {
+        if (sx === null) { sx = e.clientX; sy = e.clientY; return; }
+        if (Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) < 12) return;
+      }
+      stop(); return;
+    }
+    arm();
+  }
+  function register(){
+    if (window.Shiny && Shiny.addCustomMessageHandler && !window.__ssReg) {
+      window.__ssReg = true;
+      Shiny.addCustomMessageHandler('ss_photos', function(d){ P = Array.isArray(d) ? d : []; });
+    }
+  }
+  register();
+  document.addEventListener('DOMContentLoaded', function(){
+    register();
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel', 'scroll'].forEach(function(t){
+      document.addEventListener(t, activity, true); });
+    var m = el('ss_mode'), n = el('ss_min'), pv = el('ss_preview');
+    if (m) { m.value = mode(); m.addEventListener('change', function(){ ls('sts_ss', m.value); arm(); }); }
+    if (n) { n.value = String(mins()); n.addEventListener('change', function(){ ls('sts_ss_min', n.value); arm(); }); }
+    if (pv) pv.addEventListener('click', function(ev){ ev.stopPropagation(); setTimeout(function(){ start(mode() === 'off' ? 'both' : mode()); }, 250); });
+    arm();
+  });
+})();
+"
+
+screensaver_ui <- div(id = "ss",
+  div(id = "ss_img0", class = "ss-img"), div(id = "ss_img1", class = "ss-img"), div(class = "ss-shade"),
+  div(class = "ss-hint", "Move the mouse or press any key to return"),
+  div(class = "ss-clock", div(id = "ss_time", class = "ss-time"), div(id = "ss_date", class = "ss-date")),
+  div(id = "ss_cap", class = "ss-cap"))
+
 settings_ui <- div(id = "side_settings", style = "display:none;",
   h4("Theme"),
   div(class = "theme-grid", lapply(THEMES, function(t)
@@ -1394,18 +1491,28 @@ settings_ui <- div(id = "side_settings", style = "display:none;",
   div(class = "font-prev",
       div(tags$b("SKATAL-2025-0412"), " - Skaha Lake release - 2,143 fish - crew of 3"),
       div("The quick brown fox jumps over the lazy dog 0123456789")),
-  div(class = "small-note", "Settings are saved in this browser only."))
+  h4("Screensaver", style = "margin-top:14px;"),
+  div(class = "set-d", "When the page sits idle, show a UTC clock and/or a slideshow from the photo library. Any mouse move, click or key brings the dashboard back."),
+  div(class = "ss-row",
+      tags$select(id = "ss_mode", tags$option(value = "both", "Clock + photos"), tags$option(value = "clock", "Clock only"),
+                  tags$option(value = "photos", "Photos only"), tags$option(value = "off", "Off")),
+      tags$select(id = "ss_min", tags$option(value = "1", "after 1 min"), tags$option(value = "2", "after 2 min"),
+                  tags$option(value = "5", "after 5 min"), tags$option(value = "10", "after 10 min"),
+                  tags$option(value = "15", "after 15 min"))),
+  tags$button(type = "button", id = "ss_preview", class = "btn btn-default btn-sm", "Preview screensaver"),
+  div(class = "small-note", "Settings are saved in this browser only. All times on the dashboard are UTC."))
 
 ui <- fluidPage(
   useShinyjs(),
-  tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)),
+  tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SS_JS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
 
+  screensaver_ui,
   div(class = "topbar",
       div(class = "brand", div(class = "logo"),
           div(h1("Let's Follow the Sockeye"),
               p("Okanagan fry and smolt outmigration tracker"))),
-      div(class = "ver", HTML(sprintf("v%s<br>built %s GMT-7", APP_VERSION, APP_VERSION_DATE)))),
+      div(class = "ver", HTML(sprintf("v%s<br>built %s UTC", APP_VERSION, APP_VERSION_DATE)))),
 
   div(class = "layout",
       # ---------------- left pane ----------------
@@ -2314,6 +2421,8 @@ server <- function(input, output, session) {
   load_photos <- function() {
     d <- tryCatch(fetch_photo_index(), error = function(e) "error")
     photos(d)
+    if (is.data.frame(d))
+      session$sendCustomMessage("ss_photos", unname(Map(function(u, c) list(url = u, caption = c), d$url, d$caption)))
     if (is.data.frame(d)) {
       al <- sort(unique(d$album))
       updateSelectInput(session, "photo_album", choices = c("All photos" = "all", setNames(al, al)),
@@ -2363,13 +2472,13 @@ server <- function(input, output, session) {
                               p(style = "margin-top:10px;font-size:12px;", tags$a(href = r$url, target = "_blank", "Open original")))))
   })
 
-  # ---------------- Exports (light theme, versioned, GMT-7 stamp) ----------------
+  # ---------------- Exports (light theme, versioned, UTC stamp) ----------------
   stamp <- function() tz_now("%m%d%Y_%H%M%S")
-  # every exported plot carries a visible footer: population, years, version, date and time (GMT-7)
+  # every exported plot carries a visible footer: population, years, version, date and time (UTC)
   meta  <- function(p, when = tz_now("%Y-%m-%d %H:%M:%S")) {
     yrs <- sel()$years
     yr_txt <- if (length(yrs)) paste(sort(yrs), collapse = ", ") else "all years"
-    p + labs(caption = sprintf("%s  |  Release years: %s  |  v%s  |  Generated %s GMT-7",
+    p + labs(caption = sprintf("%s  |  Release years: %s  |  v%s  |  Generated %s UTC",
                                pop_name(), yr_txt, APP_VERSION, when)) +
       theme(plot.caption = element_text(size = 10, colour = "#333333", hjust = 0,
                                         margin = margin(t = 10)),
