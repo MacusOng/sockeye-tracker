@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.18.0"
+APP_VERSION      <- "0.19.0"
 APP_TIMEZONE     <- "UTC"                             # all app times are UTC (local time-zone rules unsettled)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -1181,7 +1181,41 @@ button,select,input,textarea{font-family:inherit;}
 h1,h2,h3,h4{color:var(--ink);}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 0 10px;}
 .brand{display:flex;align-items:center;gap:12px;}
-.logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--red) 0 26%,var(--accent) 27%);}
+.logo{width:46px;height:46px;flex:none;} .logo svg{width:100%;height:100%;display:block;}
+.lg-fish{animation:lgswim 3.4s ease-in-out infinite;} .lg-wave{animation:lgwave 5s linear infinite;}
+@keyframes lgswim{0%,100%{transform:translate(0,0) rotate(0deg);}50%{transform:translate(1.5px,-1.5px) rotate(-2deg);}}
+@keyframes lgwave{from{transform:translateX(0);}to{transform:translateX(16px);}}
+@media (prefers-reduced-motion: reduce){.lg-fish,.lg-wave,.tour-ring,.tour-do-ico{animation:none !important;}}
+.beta-badge{display:inline-block;vertical-align:middle;margin-left:8px;font-size:10px;font-weight:800;letter-spacing:.12em;padding:2px 8px;border-radius:999px;background:var(--gold);color:#1f1a0e;position:relative;top:-2px;}
+.top-right{display:flex;gap:10px;align-items:center;}
+.tour-btn{background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;}
+.tour-btn:hover{border-color:var(--accent);}
+#tour{position:fixed;top:0;left:0;width:0;height:0;z-index:99000;}
+.tour-shade{position:fixed;background:rgba(5,10,15,.62);}
+.tour-ring{position:fixed;border:3px solid var(--accent);border-radius:12px;pointer-events:none;box-shadow:0 0 0 4px rgba(255,255,255,.22),0 0 22px var(--accent);animation:tourpulse 1.6s ease-in-out infinite;}
+@keyframes tourpulse{50%{box-shadow:0 0 0 8px rgba(255,255,255,.1),0 0 32px var(--accent);}}
+.tour-card{position:fixed;width:330px;max-width:calc(100vw - 16px);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 18px 50px rgba(0,0,0,.35);font-size:13.5px;line-height:1.5;}
+.tour-card.center{left:50% !important;top:50% !important;transform:translate(-50%,-50%);width:430px;text-align:center;}
+.tour-card h4{margin:6px 0;font-size:17px;font-weight:700;color:var(--ink);}
+.tour-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.tour-dots{display:flex;gap:4px;} .tour-dots i{width:14px;height:5px;border-radius:3px;background:var(--line);display:block;}
+.tour-dots i.past{background:var(--accent);opacity:.5;} .tour-dots i.now{background:var(--accent);}
+.tour-do{display:flex;gap:8px;align-items:flex-start;background:var(--soft);border:1px dashed var(--accent);border-radius:10px;padding:8px 10px;margin:10px 0 2px;text-align:left;}
+.tour-do-ico{width:16px;height:16px;border-radius:50%;border:2px solid var(--accent);flex:none;margin-top:2px;position:relative;animation:tourblink 1s ease-in-out infinite;}
+@keyframes tourblink{50%{opacity:.3;}}
+.tour-do.ok{border-style:solid;} .tour-do.ok .tour-do-ico{background:var(--accent);animation:none;}
+.tour-do.ok .tour-do-ico::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid var(--on-accent);border-width:0 2px 2px 0;transform:rotate(45deg);}
+.tour-stuck{display:none;font-size:11.5px;color:var(--muted);margin-top:6px;}
+.tour-btns{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;}
+.tour-card.center .tour-btns{justify-content:center;}
+.tour-next{background:var(--accent);color:var(--on-accent);border:0;border-radius:999px;padding:7px 18px;font-weight:700;}
+.tour-next:disabled{opacity:.35;cursor:not-allowed;}
+.tour-back{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 14px;}
+.tour-medal{display:inline-block;background:var(--gold);color:#1f1a0e;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:4px;}
+.tour-badge{width:88px;height:88px;margin:2px auto 6px;} .tour-badge svg{width:100%;height:100%;}
+.tour-tip{position:absolute;z-index:9000;width:310px;max-width:calc(100vw - 16px);background:var(--card);color:var(--ink);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:13px;line-height:1.5;}
+.tour-tip-h{font-weight:700;font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.tour-tip-off{font-size:11.5px;color:var(--muted);}
 .brand h1{font-size:19px;font-weight:700;margin:0;} .brand p{margin:0;font-size:12px;color:var(--muted);}
 .ver{font-size:11px;color:var(--muted);text-align:right;background:var(--card);border:1px solid var(--line);
 border-radius:8px;padding:5px 10px;line-height:1.35;}
@@ -1215,7 +1249,7 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 @media print{
   .layout{display:block !important;}
   aside.side{position:static !important;margin-bottom:16px;break-inside:avoid;}
-  a.shiny-download-link,.btn-go,.btn-soft{display:none !important;}
+  a.shiny-download-link,.btn-go,.btn-soft,.tour-btn,#tour,.tour-tip{display:none !important;}
   .card{break-inside:avoid-page;}
 }
 /* tabs as pill bar */
@@ -1425,6 +1459,7 @@ SS_JS <- "
     im.src = p.url;
   }
   function start(force){
+    if (window.__tourActive && !force) return;
     var m = force || mode(); if (m === 'off') return;
     var photos = (m === 'photos' || m === 'both') && P.length > 0;
     el('ss').className = 'on ' + (photos ? (m === 'photos' ? 'photos-only' : 'both') : 'clock-only');
@@ -1436,7 +1471,7 @@ SS_JS <- "
     ['ss_img0', 'ss_img1'].forEach(function(i){ el(i).classList.remove('show'); });
     arm();
   }
-  function arm(){ clearTimeout(timer); if (mode() !== 'off') timer = setTimeout(function(){ start(); }, mins() * 60000); }
+  function arm(){ clearTimeout(timer); if (window.__tourActive) { timer = setTimeout(arm, 30000); return; } if (mode() !== 'off') timer = setTimeout(function(){ start(); }, mins() * 60000); }
   function activity(e){
     if (active) {
       if (e.type === 'mousemove') {
@@ -1466,6 +1501,208 @@ SS_JS <- "
   });
 })();
 "
+
+# -----------------------------------------------------------------------------
+# Walk-through (game-style tutorial). Required on a browser's first visit and
+# again whenever TOUR_VERSION changes (bump it after a big layout change).
+# Do-it steps unlock only when the user performs the action. After the tour,
+# each tab shows a one-time tip the first time it is opened.
+# -----------------------------------------------------------------------------
+TOUR_VERSION <- "1"
+
+logo_svg <- function(s = "a") HTML(sprintf(
+'<svg viewBox="0 0 64 64" role="img" aria-label="Sockeye salmon logo">
+<defs><linearGradient id="lgw%1$s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a93ad"/><stop offset="1" stop-color="#145a50"/></linearGradient>
+<clipPath id="lgc%1$s"><circle cx="32" cy="32" r="30"/></clipPath></defs>
+<circle cx="32" cy="32" r="30" fill="url(#lgw%1$s)"/>
+<g clip-path="url(#lgc%1$s)">
+<path class="lg-wave" d="M-16 47 q8 -4 16 0 t16 0 t16 0 t16 0 t16 0 t16 0 v30 h-96z" fill="#0d4038" opacity=".55"/>
+<g class="lg-fish">
+<path d="M15 33 L5 24.5 C7.5 30 7.5 36 5 41.5 Z" fill="#a8261f"/>
+<path d="M27 22.5 L31 16.5 L36 22 Z" fill="#a8261f"/>
+<path d="M14 33 C20 22 33 19.5 43 24.5 C48 27 51.5 29.5 54 32 C51.5 35 48 37.5 43 38.5 C33 42 21 41 14 33 Z" fill="#d6392d"/>
+<path d="M42.5 24.3 C48 26.6 51.5 29.6 54 32 C51.5 35 48.2 37.4 43.2 38.4 C44.6 34 44.4 29 42.5 24.3 Z" fill="#2f6b4f"/>
+<path d="M53.6 32.4 C56.2 34 55.8 37.2 52.2 36.6" fill="none" stroke="#2f6b4f" stroke-width="1.8" stroke-linecap="round"/>
+<path d="M43.2 26.2 C45 29.8 45 33.6 43.4 37.2" fill="none" stroke="#1d4a35" stroke-width="1.1"/>
+<circle cx="48.6" cy="30" r="1.6" fill="#fff"/><circle cx="48.9" cy="30" r=".8" fill="#111"/>
+</g></g>
+<circle cx="32" cy="32" r="30" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+</svg>', s))
+
+TOUR_STEPS <- list(
+  list(center = TRUE, badge = as.character(logo_svg("w")), next_label = "Start the tour",
+       title = "Welcome to Let's Follow the Sockeye",
+       body = "This dashboard follows PIT-tagged juvenile sockeye from their release sites in the Okanagan down the Columbia River to the ocean. It is in <b>beta</b>: features and results may change.<br><br>The tour takes about a minute. Some steps ask you to try a control yourself, so you learn it by doing."),
+  list(sel = ".side-tabs", place = "right", title = "Two panels, one switch",
+       body = "The left panel has two sides. <b>Filters</b> choose which fish you are looking at. <b>Settings</b> changes how the site looks. You will visit both."),
+  list(sel = "pop", place = "right", doit = "pop", auto = FALSE, title = "Choose your fish",
+       body = "Pick one release site, any combination of sites, or <b>All Populations</b>. Choosing all six sites switches back to All Populations automatically. Hatchery sites and the lakes are kept separate, never pooled.",
+       action = "Open the population list.", nice = "Have a look around the list, then press Next."),
+  list(sel = "#year_ui", place = "right", title = "Release year",
+       body = "Pick one or more release years. All years are selected to start with. Click a year and press Delete or Backspace to remove it; click the box to add it back."),
+  list(sel = "#date_ui", place = "right", title = "Release dates",
+       body = "Narrow the selection to fish released between two dates. It starts at the full span of the data."),
+  list(sel = "#go", place = "right", doit = "go", auto = TRUE, title = "Press Go to apply",
+       body = "Changes in the left panel do nothing until you press <b>Go</b>, so you can set several filters first. If you change something and forget, a red reminder appears under the button. Go also loads any newer data exports.",
+       action = "Press Go.", nice = "The dashboard has been updated."),
+  list(sel = "#side_summary", place = "right", title = "Your selection at a glance",
+       body = "This box sums up the fish in the current selection: how many were released, how many were detected downstream, the farthest checkpoint reached and the median days to Bonneville Dam."),
+  list(sel = "#tabs", place = "bottom", doit = "tab", auto = TRUE, title = "Nine views of the same fish",
+       body = "Each tab shows the current selection a different way, from the big-picture <b>Overview</b> to single-fish <b>Journeys</b>, the <b>Migration</b> map, <b>Survival</b> statistics and field <b>Photos</b>. The first time you open each tab, a short tip explains it.",
+       action = "Open any other tab.", nice = "That is how you move between views."),
+  list(sel = ".st-b[data-pane=settings]", place = "right", doit = "settings", auto = TRUE, title = "Make it yours",
+       body = "<b>Settings</b> holds the colour themes, Follow the sun (light by day, dark at night in Penticton), the interface font and the screensaver. Choices are saved in this browser only.",
+       action = "Switch to Settings.", nice = "Try a theme any time. Filters is one click away."),
+  list(sel = ".ver", place = "left", title = "Beta and version",
+       body = "This site is in <b>beta</b>: features are still being added and numbers can change as new data arrive. The version box shows the current build. All times on the dashboard are UTC."),
+  list(sel = "#tour_btn", place = "left", title = "Need a refresher?",
+       body = "Press <b>Tour</b> any time to replay this walk-through."),
+  list(center = TRUE, badge = as.character(logo_svg("f")), next_label = "Start exploring", final = TRUE,
+       title = "Tutorial complete!",
+       body = "You are ready to follow the sockeye. Pick a population, press Go and explore the tabs. Hover over charts and bars for exact numbers.")
+)
+TOUR_TIPS <- list(
+  Overview = "The big picture for your selection: how many fish were tagged, where they were released, and the season survival funnel showing the share of fish detected at each checkpoint downstream.",
+  Explore = "Every tagged fish in your selection as a searchable table. Type a tag code, site or year in the search box, sort by any column, and save it with Export table (CSV).",
+  Charts = "Ready-made charts: fish released, detection rate and counts by checkpoint, travel time and weekly detections. Each has an Export plot (PNG) button; the saved file records your selection in its footer.",
+  Journeys = "Fish detected downstream of their release site. Click a row in the table to trace that fish checkpoint by checkpoint.",
+  Migration = "Press play or drag the season date to watch fish reach each checkpoint on the map. The panel on the right follows a single fish; press Another fish to pick a new one.",
+  Recaptures = "Fish caught again after release and let go a second time. Shown for reference only: they do not change detection rates, travel times or survival.",
+  Speed = "Pace in km per day for every fish seen at two or more checkpoints. Switch between Fastest and Slowest; the bottom card compares median pace by release location, with a p-value when two or more populations are selected.",
+  Survival = "Travel time, survival between checkpoints and lambda from the Cormack-Jolly-Seber model, plus p-values comparing the populations you picked. Read the gold warning if a group may still be migrating.",
+  Photos = "Field photos from the shared photo library. Filter by album, search by name, and click a photo to enlarge it. New uploads appear after Refresh photos."
+)
+
+TOUR_JS <- paste0("
+(function(){
+  var S = ", jsonlite::toJSON(TOUR_STEPS, auto_unbox = TRUE), ", TIPS = ", jsonlite::toJSON(TOUR_TIPS, auto_unbox = TRUE), ", TV = '", TOUR_VERSION, "';
+  var i = 0, done = false, stuck = null, poll = null, root = null, card = null, ring = null, shades = [];
+  function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e) { return null; } }
+  function q(s){ return document.querySelector(s); }
+  function target(st){
+    if (!st.sel) return null;
+    if (st.sel === 'pop') { var b = q('button[data-id=pop]'); return b ? (b.closest('.bootstrap-select') || b) : null; }
+    return q(st.sel);
+  }
+  function holeRect(el){
+    var r = el.getBoundingClientRect(), x1 = r.left, y1 = r.top, x2 = r.right, y2 = r.bottom;
+    var ex = document.querySelectorAll('.bootstrap-select.open .dropdown-menu, .bootstrap-select.show .dropdown-menu, .selectize-dropdown, .datepicker-dropdown');
+    for (var j = 0; j < ex.length; j++) {
+      var er = ex[j].getBoundingClientRect();
+      if (er.width < 2 || er.height < 2 || getComputedStyle(ex[j]).display === 'none') continue;
+      x1 = Math.min(x1, er.left); y1 = Math.min(y1, er.top); x2 = Math.max(x2, er.right); y2 = Math.max(y2, er.bottom);
+    }
+    return {l: x1 - 6, t: y1 - 6, r: x2 + 6, b: y2 + 6};
+  }
+  function box(e, l, t, w, h){ e.style.display = 'block'; e.style.left = l + 'px'; e.style.top = t + 'px'; e.style.width = Math.max(0, w) + 'px'; e.style.height = Math.max(0, h) + 'px'; }
+  function layout(){
+    if (!root) return;
+    var st = S[i], el = target(st), W = window.innerWidth, H = window.innerHeight, k;
+    if (st.center || !el) {
+      box(shades[0], 0, 0, W, H); for (k = 1; k < 4; k++) shades[k].style.display = 'none';
+      ring.style.display = 'none'; card.classList.add('center'); card.style.left = ''; card.style.top = ''; return;
+    }
+    var h = holeRect(el);
+    box(shades[0], 0, 0, W, h.t); box(shades[1], 0, h.b, W, H - h.b);
+    box(shades[2], 0, h.t, h.l, h.b - h.t); box(shades[3], h.r, h.t, W - h.r, h.b - h.t);
+    box(ring, h.l, h.t, h.r - h.l, h.b - h.t);
+    card.classList.remove('center');
+    var cw = card.offsetWidth, ch = card.offsetHeight, g = 16, x, y;
+    var fits = {right: h.r + g + cw <= W - 8, left: h.l - g - cw >= 8, bottom: h.b + g + ch <= H - 8, top: h.t - g - ch >= 8};
+    var order = [st.place || 'right', 'right', 'bottom', 'top', 'left'], pick = 'bottom';
+    for (k = 0; k < order.length; k++) if (fits[order[k]]) { pick = order[k]; break; }
+    if (pick === 'right') { x = h.r + g; y = h.t; } else if (pick === 'left') { x = h.l - g - cw; y = h.t; }
+    else if (pick === 'bottom') { x = h.l; y = h.b + g; } else { x = h.l; y = h.t - g - ch; }
+    card.style.left = Math.max(8, Math.min(x, W - cw - 8)) + 'px';
+    card.style.top = Math.max(8, Math.min(y, H - ch - 8)) + 'px';
+  }
+  function render(){
+    var st = S[i], steps = S.filter(function(s){ return !s.center; }), n = steps.length;
+    var k = S.slice(0, i + 1).filter(function(s){ return !s.center; }).length, h = '', d;
+    done = !st.doit; clearTimeout(stuck);
+    if (!st.center) {
+      h += '<div class=tour-top><span>Step ' + k + ' of ' + n + '</span><span class=tour-dots>';
+      for (d = 1; d <= n; d++) h += '<i class=' + (d < k ? 'past' : (d === k ? 'now' : 'todo')) + '></i>';
+      h += '</span></div>';
+    } else if (st.badge) h += '<div class=tour-badge>' + st.badge + '</div>' + (st.final ? '<div class=tour-medal>' + n + ' of ' + n + ' steps complete</div>' : '');
+    h += '<h4>' + st.title + '</h4><div class=tour-body>' + st.body + '</div>';
+    if (st.doit) h += '<div class=tour-do id=tour_do><span class=tour-do-ico></span><span><b>Your move:</b> ' + st.action + '</span></div>' +
+                      '<a href=# class=tour-stuck id=tour_stuck>Stuck? Continue anyway</a>';
+    h += '<div class=tour-btns>' + ((i > 0 && !st.center) ? '<button type=button class=tour-back id=tour_back>Back</button>' : '<span></span>') +
+         '<button type=button class=tour-next id=tour_next' + (done ? '' : ' disabled') + '>' + (st.next_label || 'Next') + '</button></div>';
+    card.innerHTML = h;
+    q('#tour_next').onclick = function(){ if (done) go(i + 1); };
+    if (q('#tour_back')) q('#tour_back').onclick = function(){ go(i - 1); };
+    if (q('#tour_stuck')) q('#tour_stuck').onclick = function(e){ e.preventDefault(); go(i + 1); };
+    var el = target(st); if (el && !st.center && el.scrollIntoView) el.scrollIntoView({block: 'center'});
+    layout(); setTimeout(layout, 80);
+    if (st.doit) stuck = setTimeout(function(){ var s = q('#tour_stuck'); if (s) s.style.display = 'inline-block'; }, 30000);
+  }
+  function complete(){
+    var st = S[i]; if (done || !st.doit) return; done = true;
+    var dd = q('#tour_do'); if (dd) { dd.classList.add('ok'); dd.innerHTML = '<span class=tour-do-ico></span><span><b>Nice!</b> ' + (st.nice || '') + '</span>'; }
+    var nb = q('#tour_next'); if (nb) nb.disabled = false;
+    var sk = q('#tour_stuck'); if (sk) sk.style.display = 'none';
+    var at = i; if (st.auto) setTimeout(function(){ if (root && i === at) go(i + 1); }, 1400);
+  }
+  function go(n){ if (n < 0) return; if (n >= S.length) return finish(); i = n; render(); }
+  function finish(){
+    ls('sts_tour', TV); clearInterval(poll); clearTimeout(stuck);
+    if (root) root.parentNode.removeChild(root); root = null; window.__tourActive = false;
+    var f = q('.st-b[data-pane=filters]'); if (f) f.click();
+    var a = q('#tabs li.active a'); if (a) setTimeout(function(){ tip(a); }, 300);
+  }
+  function start(){
+    if (root) return;
+    var old = q('.tour-tip'); if (old) old.parentNode.removeChild(old);
+    window.__tourActive = true; i = 0; shades = [];
+    root = document.createElement('div'); root.id = 'tour';
+    for (var k = 0; k < 4; k++) { var s = document.createElement('div'); s.className = 'tour-shade'; root.appendChild(s); shades.push(s); }
+    ring = document.createElement('div'); ring.className = 'tour-ring'; root.appendChild(ring);
+    card = document.createElement('div'); card.className = 'tour-card'; root.appendChild(card);
+    document.body.appendChild(root);
+    render(); poll = setInterval(layout, 250);
+  }
+  function tip(a){
+    if (root || ls('sts_tour') !== TV || ls('sts_tips_off') === '1' || !a) return;
+    var name = a.getAttribute('data-value') || a.textContent.trim(), t = TIPS[name];
+    if (!t || ls('sts_tip_' + name) === '1') return;
+    var old = q('.tour-tip'); if (old) old.parentNode.removeChild(old);
+    var d = document.createElement('div'); d.className = 'tour-tip';
+    d.innerHTML = '<div class=tour-tip-h>Tip: ' + name + '</div><div class=tour-body>' + t + '</div>' +
+      '<div class=tour-btns><a href=# class=tour-tip-off>Hide all tips</a><button type=button class=tour-next>Got it</button></div>';
+    document.body.appendChild(d);
+    var r = a.getBoundingClientRect();
+    d.style.left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - d.offsetWidth - 8)) + 'px';
+    d.style.top = (r.bottom + window.scrollY + 12) + 'px';
+    d.querySelector('.tour-next').onclick = function(){ ls('sts_tip_' + name, '1'); d.parentNode.removeChild(d); };
+    d.querySelector('.tour-tip-off').onclick = function(e){ e.preventDefault(); ls('sts_tips_off', '1'); d.parentNode.removeChild(d); };
+  }
+  document.addEventListener('click', function(e){
+    if (!root || done) return;
+    var st = S[i], t = e.target;
+    if (!st.doit || !t.closest) return;
+    if (st.doit === 'go' && t.closest('#go')) complete();
+    if (st.doit === 'settings' && t.closest('.st-b[data-pane=settings]')) complete();
+    if (st.doit === 'pop' && t.closest('button[data-id=pop]')) setTimeout(complete, 150);
+  }, true);
+  window.addEventListener('resize', layout);
+  window.addEventListener('scroll', layout, true);
+  $(document).on('shown.bs.tab', function(e){ if (root) { if (S[i].doit === 'tab') complete(); } else tip(e.target); });
+  $(document).on('shown.bs.select', function(){ if (root && S[i].doit === 'pop') complete(); });
+  function boot(force){
+    var tries = 0;
+    (function wait(){
+      if ((q('#tabs') && q('button[data-id=pop]')) || tries > 60) { if (force || ls('sts_tour') !== TV) start(); return; }
+      tries++; setTimeout(wait, 300);
+    })();
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    var b = q('#tour_btn'); if (b) b.addEventListener('click', function(){ boot(true); });
+    boot(false);
+  });
+})();
+")
 
 screensaver_ui <- div(id = "ss",
   div(id = "ss_img0", class = "ss-img"), div(id = "ss_img1", class = "ss-img"), div(class = "ss-shade"),
@@ -1504,15 +1741,17 @@ settings_ui <- div(id = "side_settings", style = "display:none;",
 
 ui <- fluidPage(
   useShinyjs(),
-  tags$head(tags$title("Let's Follow the Sockeye"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SS_JS)),
+  tags$head(tags$title("Let's Follow the Sockeye (Beta)"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SS_JS)), tags$script(HTML(TOUR_JS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
 
   screensaver_ui,
   div(class = "topbar",
-      div(class = "brand", div(class = "logo"),
-          div(h1("Let's Follow the Sockeye"),
+      div(class = "brand", div(class = "logo", logo_svg("t")),
+          div(h1("Let's Follow the Sockeye", span(class = "beta-badge", "BETA")),
               p("Okanagan fry and smolt outmigration tracker"))),
-      div(class = "ver", HTML(sprintf("v%s<br>built %s UTC", APP_VERSION, APP_VERSION_DATE)))),
+      div(class = "top-right",
+          tags$button(type = "button", id = "tour_btn", class = "tour-btn", icon("circle-question"), " Tour"),
+          div(class = "ver", HTML(sprintf("v%s beta<br>built %s UTC", APP_VERSION, APP_VERSION_DATE))))),
 
   div(class = "layout",
       # ---------------- left pane ----------------

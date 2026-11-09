@@ -10,6 +10,12 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.19.0 - 2026-11-09
+- Added: game-style walk-through. Required on a browser's first visit (and again whenever TOUR_VERSION is bumped after a big layout change): 10 steps with a progress bar, a spotlight on each control and the rest of the page blocked. Do-it steps unlock only when the user performs the action (open the population list, press Go, open another tab, switch to Settings); a "Stuck? Continue anyway" link appears after 30 seconds so nobody gets locked out. Ends with a "Tutorial complete" badge. The Tour button in the top bar replays it.
+- Added: one-time tips the first time each tab is opened after the tour (Got it / Hide all tips).
+- Added: "BETA" badge next to the title, "beta" in the version box and the browser tab title.
+- Changed: new animated sockeye logo next to the title (spawning sockeye over moving water). The screensaver does not start while the tour is running.
+
 ## 0.18.0 - 2026-11-06
 - Added: screensaver. When the page sits idle (1, 2, 5, 10 or 15 minutes, set in Settings), it shows a large UTC clock and/or a slideshow of the photo library (new photo every 8 seconds, with captions). Modes: Clock + photos (default), Clock only, Photos only, Off, plus a Preview button. Any mouse move, click, key or touch returns to the dashboard. Runs in the browser only, so it does not keep the shinyapps.io session awake.
 - Changed: all app times are now UTC instead of GMT-7 (version box, export file names, plot footers and the Follow-the-sun sunrise/sunset times), because local time-zone rules are unsettled. Times in the PTAGIS data were already handled as UTC.
