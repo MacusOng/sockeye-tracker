@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.21.0"
+APP_VERSION      <- "0.23.0"
 APP_TIMEZONE     <- "UTC"                             # all app times are UTC (local time-zone rules unsettled)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -1155,8 +1155,8 @@ button,select,input,textarea{font-family:inherit;}
 .set-t{font-weight:700;font-size:14px;color:var(--ink);} .set-d{font-size:11.5px;color:var(--muted);line-height:1.4;}
 .sun-row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:4px 0 4px;}
 .seg{display:flex;border:1px solid var(--line);border-radius:999px;padding:2px;flex:none;}
-.seg-b{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;}
-.seg-b.on{background:var(--accent);color:var(--on-accent);}
+.seg-b,.snd-b{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:4px 10px;font-weight:700;font-size:12px;}
+.seg-b.on,.snd-b.on{background:var(--accent);color:var(--on-accent);}
 #sun_status{margin-bottom:14px;}
 #font_pick{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;width:100%;padding:6px 8px;margin-top:6px;}
 #ss{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;background:#000;display:none;cursor:none;overflow:hidden;}
@@ -1238,6 +1238,39 @@ aside.side h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color
 aside.side .form-group{margin-bottom:12px;} aside.side label{font-size:12px;color:var(--muted);font-weight:600;}
 .btn.btn-go{width:100%;background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;font-weight:700;padding:9px;font-size:15px;}
 .btn.btn-go:hover,.btn.btn-go:focus{background:var(--accent2);color:var(--on-accent);}
+#nerki{position:fixed;right:20px;bottom:20px;z-index:9800;}
+.nk-launch{width:66px;height:66px;border-radius:50%;border:0;padding:0;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#1f7a6d,#2a7f9a);box-shadow:0 8px 22px rgba(0,0,0,.22);animation:nkpop .6s ease-out;}
+.nk-launch svg{width:84%;height:auto;} .nk-launch.hide{display:none;}
+.nk-launch:hover{transform:scale(1.05);} .nk-launch:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
+.nk-ring{position:absolute;top:-6px;left:-6px;right:-6px;bottom:-6px;border-radius:50%;border:2px solid #1f7a6d;opacity:0;animation:nkring 2.8s ease-out infinite;pointer-events:none;}
+@keyframes nkring{0%{transform:scale(.85);opacity:.7;}100%{transform:scale(1.25);opacity:0;}}
+@keyframes nkpop{from{transform:scale(.4);opacity:0;}to{transform:scale(1);opacity:1;}}
+.nk-hello{position:absolute;right:80px;bottom:14px;width:230px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px 14px 4px 14px;
+  padding:10px 26px 10px 13px;font-size:13.5px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.15);cursor:pointer;display:none;}
+.nk-hello.show{display:block;animation:nkpop .5s ease-out;} .nk-hello b{color:var(--accent);}
+.nk-hello-x{position:absolute;top:4px;right:6px;border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;}
+.nk-panel{display:none;position:absolute;right:0;bottom:0;width:min(370px,calc(100vw - 24px));height:min(560px,calc(100vh - 40px));background:var(--card);color:var(--ink);
+  border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(0,0,0,.25);overflow:hidden;flex-direction:column;}
+.nk-panel.open{display:flex;animation:nkpop .3s ease-out;transform-origin:bottom right;}
+.nk-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#145a50,#1f7a6d 60%,#2a7f9a);color:#fff;flex:none;}
+.nk-av{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none;} .nk-av svg{width:86%;}
+.nk-ht{flex:1;line-height:1.25;} .nk-ht b{display:block;font-size:15px;} .nk-ht span{font-size:11px;opacity:.85;}
+.nk-close{border:0;background:transparent;color:#fff;font-size:24px;line-height:1;cursor:pointer;padding:0 4px;}
+.nk-msgs{flex:1;overflow-y:auto;padding:12px;font-size:13.5px;line-height:1.5;}
+.nk-m{background:var(--soft);border-radius:12px 12px 12px 4px;padding:9px 11px;margin-bottom:8px;max-width:90%;word-wrap:break-word;}
+.nk-m.me{background:var(--accent);color:var(--on-accent);border-radius:12px 12px 4px 12px;margin-left:auto;}
+.nk-go{margin-top:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;}
+.nk-dots i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:3px;animation:nkty 1s infinite;}
+.nk-dots i:nth-child(2){animation-delay:.15s;} .nk-dots i:nth-child(3){animation-delay:.3s;}
+@keyframes nkty{50%{transform:translateY(-4px);opacity:.4;}}
+.nk-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 12px 8px;flex:none;}
+.nk-chip{border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;text-align:left;}
+.nk-chip:hover{background:var(--soft);}
+.nk-inp{display:flex;gap:8px;border-top:1px solid var(--line);padding:10px 12px;margin:0;flex:none;}
+.nk-inp input{flex:1;border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-size:13px;background:var(--bg);color:var(--ink);min-width:0;}
+.nk-send{width:36px;height:36px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);flex:none;cursor:pointer;}
+@media (prefers-reduced-motion: reduce){.nk-launch,.nk-ring,.nk-panel.open,.nk-hello.show,.nk-dots i{animation:none !important;}}
 .btn-report{margin-top:12px !important;font-weight:600;}
 .btn-soft{width:100%;background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:10px;margin-top:8px;}
 table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,109,.28) !important;color:var(--ink) !important;}
@@ -1262,7 +1295,7 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 @media print{
   .layout{display:block !important;}
   aside.side{position:static !important;margin-bottom:16px;break-inside:avoid;}
-  a.shiny-download-link,.btn-go,.btn-soft,.tour-btn,#tour,.tour-tip,.gloss-tip{display:none !important;}
+  a.shiny-download-link,.btn-go,.btn-soft,.tour-btn,#tour,.tour-tip,.gloss-tip,#nerki{display:none !important;}
   .gloss{border-bottom:0;}
   .card{break-inside:avoid-page;}
 }
@@ -1440,6 +1473,78 @@ SETTINGS_JS <- sprintf("
   $(document).on('shiny:connected', function(){ Shiny.setInputValue('ui_dark', !!window.__stsDark); });
 })();
 ", jsonlite::toJSON(THEMES, auto_unbox = TRUE), jsonlite::toJSON(FONTS, auto_unbox = TRUE))
+
+# Soft synthesized pops and chimes (Web Audio, no sound files, nothing downloaded).
+# Browsers keep a page silent until the first click, tap or key press; after that,
+# sounds play. The Settings pane has an On/Off switch saved per browser (sts_snd).
+SOUND_JS <- "
+(function(){
+  var ctx = null;
+  function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e) { return null; } }
+  function on(){ return ls('sts_snd') !== '0'; }
+  function ac(){
+    var C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
+    if (!ctx) ctx = new C();
+    if (ctx.state === 'suspended') { try { ctx.resume(); } catch(e) {} }
+    return ctx;
+  }
+  function tone(f0, f1, d, type, v, at){
+    var c = ac(); if (!c) return;
+    var t = c.currentTime + (at || 0);
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + d);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v || 0.12, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + d + 0.05);
+  }
+  var S = {
+    pop:   function(){ tone(420, 980, 0.1, 'sine', 0.14); },
+    blub:  function(){ tone(320, 180, 0.12, 'sine', 0.11); tone(640, 430, 0.09, 'sine', 0.05, 0.05); },
+    tick:  function(){ tone(1300, 1300, 0.03, 'triangle', 0.05); },
+    go:    function(){ tone(340, 700, 0.16, 'sine', 0.1); },
+    chime: function(){ tone(880, 880, 0.16, 'sine', 0.08); tone(1318, 1318, 0.22, 'sine', 0.06, 0.1); },
+    yay:   function(){ tone(523, 523, 0.1, 'sine', 0.08); tone(659, 659, 0.1, 'sine', 0.08, 0.1); tone(784, 784, 0.18, 'sine', 0.09, 0.2); },
+    warn:  function(){ tone(460, 320, 0.22, 'sine', 0.07); }
+  };
+  window.appSnd = {
+    on: on,
+    set: function(v){ ls('sts_snd', v ? '1' : '0'); },
+    play: function(nm){ if (!on()) return; try { if (S[nm]) S[nm](); } catch(e) {} }
+  };
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function(ev){
+    document.addEventListener(ev, function f(){ document.removeEventListener(ev, f); if (on()) ac(); }, {passive: true});
+  });
+  document.addEventListener('DOMContentLoaded', function(){
+    var bs = Array.prototype.slice.call(document.querySelectorAll('.snd-b'));
+    function paint(){ var v = on() ? 'on' : 'off'; bs.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-snd') === v); }); }
+    bs.forEach(function(b){ b.addEventListener('click', function(){
+      window.appSnd.set(b.getAttribute('data-snd') === 'on'); paint();
+      if (on()) window.appSnd.play('pop');
+    }); });
+    paint();
+    document.addEventListener('click', function(e){
+      if (!e.target.closest) return;
+      if (e.target.closest('#go')) { window.appSnd.play('go'); return; }
+      if (e.target.closest('a.shiny-download-link')) window.appSnd.play('chime');
+    }, true);
+  });
+  var prevW = 0, lastW = 0;
+  $(document).on('shiny:value', function(){
+    setTimeout(function(){
+      var n = document.querySelectorAll('.mig-warn').length;
+      if (n > 0 && prevW === 0 && Date.now() - lastW > 30000) { lastW = Date.now(); window.appSnd.play('warn'); }
+      prevW = n;
+    }, 60);
+  });
+  $(document).on('shown.bs.tab', function(e){
+    var el = e.target; if (el && el.closest && el.closest('#tabs')) window.appSnd.play('tick');
+  });
+})();
+"
 
 # Screensaver: after the page sits idle, show a UTC clock and/or a slideshow of the
 # photo library (MacusOng/sockeye-tracker-photos). Any mouse move, click, key or touch
@@ -1732,7 +1837,7 @@ TOUR_JS <- paste0("
     if (st.doit) stuck = setTimeout(function(){ var s = q('#tour_stuck'); if (s) s.style.display = 'inline-block'; }, 30000);
   }
   function complete(){
-    var st = S[i]; if (done || !st.doit) return; done = true;
+    var st = S[i]; if (done || !st.doit) return; done = true; if (window.appSnd) appSnd.play('yay');
     var dd = q('#tour_do'); if (dd) { dd.classList.add('ok'); dd.innerHTML = '<span class=tour-do-ico></span><span><b>Nice!</b> ' + (st.nice || '') + '</span>'; }
     var nb = q('#tour_next'); if (nb) nb.disabled = false;
     var sk = q('#tour_stuck'); if (sk) sk.style.display = 'none';
@@ -1864,6 +1969,411 @@ GLOSS_JS <- paste0("
 })();
 ")
 
+# -----------------------------------------------------------------------------
+# Nerki: the built-in helper (no AI service, no key, nothing sent anywhere).
+# A visitor's question is matched to a curated answer bank (TF-IDF similarity on
+# sample questions, with synonyms) and a few "live" answers are calculated from
+# the current selection. Unmatched questions are written to the server log as
+# "NERKI_UNANSWERED: ..." so new answers can be added. To plug in a real AI
+# service later, only nerki_answer() in the server needs to change.
+# -----------------------------------------------------------------------------
+NERKI_CONTACT <- ""   # e.g. "email name@example.com" - shown when Nerki can't help
+
+nk <- function(id, q, a, goto = NULL, rel = NULL, live = NULL) list(id = id, q = q, a = a, goto = goto, rel = rel, live = live)
+NERKI_KB <- list(
+  # ---- live answers (worked out from the current selection) ----
+  nk("live_released", c("how many fish were released", "how many fish were tagged", "number of fish released", "how many fish are in my selection"), "", live = "released", rel = c("live_reached", "sites")),
+  nk("live_reached", c("how many fish reached bonneville", "how many fish made it to the ocean", "how many fish were detected at wells dam", "how many fish got to rocky reach", "how many reached mcnary"), "", live = "reached", rel = c("why_undetected", "detect_vs_surv")),
+  nk("live_days", c("how long does it take to reach bonneville", "how many days to rocky reach", "travel time to mcnary", "how long to get to the ocean", "how long does migration take"), "", live = "days", rel = c("harmonic", "travel_time")),
+  nk("live_fast", c("which fish is fastest", "fastest fish", "what is the fastest pace", "slowest fish", "quickest fish"), "", live = "fast", rel = c("speed_tab", "hatch_slow")),
+  nk("live_selection", c("what am i looking at", "what is selected", "current selection", "what does this page show"), "", live = "selection", rel = c("choose_pop", "go")),
+  nk("live_survival", c("what is the survival rate", "how many fish survive", "survival for my selection", "survival estimate"), "", live = "survival", rel = c("lambda", "detect_vs_surv")),
+  nk("live_pvalue", c("what does this p value mean", "is the difference significant", "are the populations different", "explain this p value"), "", live = "pvalue", rel = c("pvalue", "holm")),
+  nk("live_data", c("how recent is the data", "when was the data updated", "how old is the data", "latest data export"), "", live = "data", rel = c("upload_lag", "data_source")),
+  nk("live_zero", c("why is it zero", "why are there no detections", "why is equesis zero", "why do hatchery fish show zero", "no fish detected downstream"), "", live = "zero", rel = c("still_migrating", "why_undetected")),
+
+  # ---- using the site ----
+  nk("help", c("what can you help with", "what can you do", "who are you", "what is nerki"),
+     "I'm Nerki, a young sockeye and your helper here. I can explain how to use each part of the dashboard, what the numbers and terms mean, and how fish tracking with PIT tags works. I can also look up a few numbers for your current selection, such as how many fish reached Bonneville Dam or which fish was fastest. I'm a built-in guide in beta, so if I don't understand, try other words or tap a suggestion.",
+     rel = c("how_use", "pit", "live_reached")),
+  nk("about_site", c("what is this site", "what does this dashboard do", "what is lets follow the sockeye", "what is this for"),
+     "Let's Follow the Sockeye tracks juvenile sockeye from the Okanagan as they head down the Columbia River to the Pacific. Each fish carries a PIT tag, and antennas at dams and river sites record it as it swims past. The dashboard turns those detections into counts, travel times, survival estimates and maps. It is in beta, so features and numbers can change.",
+     rel = c("how_use", "pit", "beta")),
+  nk("how_use", c("how do i use this site", "how does this work", "getting started", "where do i start"),
+     "Start in the left panel: choose one or more populations, pick release years and press <b>Go</b>. Then use the tabs across the top: <b>Overview</b> for the big picture, <b>Journeys</b> to follow one fish, <b>Charts</b> and <b>Survival</b> for the numbers. Press <b>Tour</b> at the top right for a guided walk-through.",
+     rel = c("choose_pop", "go", "tour")),
+  nk("choose_pop", c("how do i choose a population", "how do i pick a release site", "how do i select a lake", "change population"),
+     "Open the <b>Population</b> list in the left panel, tick the release sites you want, then press <b>Go</b>. You can pick one site, any mix, or All Populations.",
+     rel = c("all_pop", "compare", "sites")),
+  nk("all_pop", c("what does all populations do", "select everything", "how to select all sites"),
+     "All Populations is a shortcut for every release site at once. Picking it clears the individual sites, and ticking all six sites switches back to All Populations by itself.",
+     rel = c("compare", "not_pooled")),
+  nk("compare", c("how do i compare two populations", "compare skaha and osoyoos", "compare lakes", "compare release sites"),
+     "Pick two or more release sites in the Population list and press <b>Go</b>. The <b>Survival</b> tab then shows whether they differ, with p-values and a plain-language note, and <b>Speed</b> compares their pace. Compare groups from the same release year, and remember hatchery fry need about a year before they migrate.",
+     goto = "Survival", rel = c("pvalue", "still_migrating")),
+  nk("years", c("how do i choose a year", "release year filter", "remove a year", "pick one year"),
+     "The <b>Release year</b> box holds the years you want. Click a year and press Delete or Backspace to remove it, or click the box to add one back. Choosing years also moves the date range to match. Press <b>Go</b> to apply.",
+     rel = c("dates", "go")),
+  nk("dates", c("what do release dates do", "date range", "filter by date", "change the dates"),
+     "Release dates narrow the selection to fish released between two dates. Years and dates work together: a fish must match both. If they stop overlapping, a red warning appears under Go.",
+     rel = c("years", "go")),
+  nk("go", c("why does nothing change", "what does the go button do", "my changes do not show", "press go"),
+     "Changes in the left panel only take effect when you press <b>Go</b>, so you can set several filters first. If you change something and forget, a red reminder appears under the button. Go also loads any newer data.",
+     rel = c("choose_pop", "years")),
+  nk("export_plot", c("how do i export a plot", "download a chart", "save a graph as png", "save the figure"),
+     "Every chart has an <b>Export plot (PNG)</b> button underneath it. The file name and a footer record the population, years, version and time (UTC), so you always know what it shows.",
+     goto = "Charts", rel = c("export_table", "report")),
+  nk("export_table", c("how do i export the data", "download a csv", "export table to excel", "download the data"),
+     "Tables have an <b>Export table (CSV)</b> button. <b>Explore</b> has the full list of tagged fish in your selection. CSV files open in Excel or R.",
+     goto = "Explore", rel = c("export_plot", "report")),
+  nk("report", c("how do i make a report", "summary report", "export everything as pdf", "make a pdf"),
+     "Press <b>Summary report</b> in the left panel. You get one file with the headline numbers, charts, survival and p-values for your selection. Open it in a browser and use Print, then Save as PDF, if you want a PDF.",
+     rel = c("export_plot", "export_table")),
+  nk("search_tag", c("how do i search for a tag", "find a specific fish", "look up a pit tag code", "search for a fish"),
+     "Go to <b>Explore</b> and type part of the tag code, a release site or a year into the search box. <b>Journeys</b> has the same search for fish detected downstream.",
+     goto = "Explore", rel = c("follow_fish", "columns")),
+  nk("columns", c("what do the columns mean", "explain the table columns", "what is in the table"),
+     "Each row is one tagged fish: its PIT tag code, where and when it was released, how many times it was detected, the farthest checkpoint it reached and how long that took. Hover over a dotted term for a definition.",
+     rel = c("farthest", "search_tag")),
+  nk("follow_fish", c("how do i follow one fish", "track a single fish", "see one fish journey", "fish journey"),
+     "Open <b>Journeys</b> and click any row. Above the table you will see every checkpoint that fish passed, in order, with dates. The <b>Migration</b> tab also has a spotlight that animates one fish down the river.",
+     goto = "Journeys", rel = c("spotlight", "farthest")),
+  nk("migration", c("how does the migration animation work", "what does the play button do", "migration map", "watch the migration"),
+     "On <b>Migration</b>, press play or drag the season date to watch fish reach each checkpoint over the season. The map lights up checkpoints as fish arrive.",
+     goto = "Migration", rel = c("spotlight", "checkpoint")),
+  nk("spotlight", c("what is the spotlight fish", "another fish button", "follow a fish on the map", "red dot on the map"),
+     "The panel on the right of <b>Migration</b> follows a single fish. The red dot is where it is on the river, the hollow gold ring is the next site where it will be detected, and filled gold marks sites it has already passed. Press <b>Another fish</b> to pick a new one.",
+     goto = "Migration", rel = c("follow_fish", "migration")),
+  nk("speed_tab", c("what does km per day mean", "how is speed calculated", "what is pace", "how fast do fish swim"),
+     "Pace is the river distance between a fish's first and last checkpoint divided by the days it took, in kilometres per day. It only covers fish seen at two or more checkpoints.",
+     goto = "Speed", rel = c("live_fast", "hatch_slow")),
+  nk("hatch_slow", c("why do hatchery fish look slower", "why are some populations slower", "why is one site slower"),
+     "Pace is measured between checkpoints, so time spent rearing in a lake before migrating is not counted. Release sites start at different places, though: hatchery fish are first picked up at Penticton and still pass Skaha and Vaseux lakes, where the water moves slowly, while Osoyoos Lake fish start near Zosel Dam. Compare groups over similar stretches of river.",
+     rel = c("speed_tab", "distance")),
+  nk("photos_add", c("how do i add photos", "upload a photo", "add my pictures"),
+     "Photos come from a shared photo library on GitHub. The site owner uploads them there, and they appear after pressing <b>Refresh photos</b>. Folders become albums and file names become captions.",
+     goto = "Photos", rel = c("photos_src")),
+  nk("photos_src", c("where do photos come from", "who took these photos", "photo library"),
+     "The Photos tab reads from a public photo library kept by the site owner. During tagging, fish welfare comes first, so photos are taken when there is time.",
+     goto = "Photos", rel = c("photos_add")),
+  nk("theme", c("how do i change the colours", "dark mode", "change theme", "night mode"),
+     "Switch the left panel to <b>Settings</b> and pick a theme: Classic, Light, Dark, Midnight, Graphite, Forest, Sand or High Contrast. Your choice is saved in this browser only.",
+     rel = c("followsun", "font")),
+  nk("followsun", c("what is follow the sun", "automatic dark mode", "switch theme at sunset"),
+     "Follow the sun shows Light while the sun is up over Penticton and Dark after sunset. Choosing a theme by hand turns it off.",
+     rel = c("theme")),
+  nk("font", c("change the font", "text is hard to read", "bigger text", "make the text larger"),
+     "In <b>Settings</b> you can pick an interface font; all are standard system fonts. For bigger text, use your browser zoom: Ctrl and + (Cmd and + on a Mac).",
+     rel = c("theme")),
+  nk("screensaver", c("what is the screensaver", "turn off the clock", "why did a clock appear", "slideshow"),
+     "When the page sits idle, a screensaver shows a UTC clock and a photo slideshow. Move the mouse or press a key to return. Change it or turn it off in <b>Settings</b>, under Screensaver.",
+     rel = c("theme", "utc")),
+  nk("tour", c("how do i replay the tour", "tutorial", "walkthrough", "show me around"),
+     "Press <b>Tour</b> at the top right any time to replay the guided walk-through.",
+     rel = c("how_use")),
+  nk("tips", c("how do i hide tips", "turn off the tips", "tip popups"),
+     "Each tab shows a short tip the first time you open it. Press <b>Got it</b> to close one, or <b>Hide all tips</b> to stop them.",
+     rel = c("tour")),
+  nk("glossary_ul", c("what do dotted underlines mean", "underlined words", "dotted line under words"),
+     "Words with a dotted underline are technical terms. Hover over one (or tap it on a phone) for a short plain-language definition.",
+     rel = c("pvalue", "lambda")),
+  nk("disconnected", c("the page went grey", "disconnected", "the site stopped working", "app froze", "page not responding"),
+     "The site goes to sleep after about 15 minutes without activity. Reload the page and it starts again. Your settings are kept, but you will need to press <b>Go</b> again.",
+     rel = c("go")),
+  nk("utc", c("what time zone", "why utc", "times are wrong", "what is utc"),
+     "All times on the dashboard are in UTC (Coordinated Universal Time), a world standard that never changes with the seasons. Local time in the Okanagan is several hours behind UTC.",
+     rel = c("screensaver")),
+  nk("beta", c("what does beta mean", "is this final", "can i trust these numbers"),
+     "Beta means the site is still being built. Features are being added and numbers can change as new data arrive, so check with the site owner before using results in formal reports.",
+     rel = c("live_data", "who_made")),
+  nk("who_made", c("who made this site", "who built this", "contact", "who do i ask"),
+     "This site was built and is maintained by Macus Ong.",
+     rel = c("beta")),
+
+  # ---- fish tracking ----
+  nk("pit", c("what is a pit tag", "how do pit tags work", "what is a tag", "how are fish tagged"),
+     "A PIT tag (passive integrated transponder) is a tiny glass tag about the size of a grain of rice, placed inside the fish. It has no battery: when the fish swims past an antenna, the antenna powers the tag for a moment and reads its unique code. That is how we know which fish passed where, and when.",
+     rel = c("antenna", "why_undetected")),
+  nk("antenna", c("how do antennas work", "what is an array", "where are the antennas", "how are fish detected"),
+     "Antennas sit in fish ladders, dam bypass systems and river sites. Each one records the tag code, place and time when a tagged fish passes close enough. The dashboard calls each group of antennas a checkpoint.",
+     rel = c("checkpoint", "det_prob")),
+  nk("checkpoint", c("what is a checkpoint", "list of checkpoints", "where are the checkpoints", "which dams"),
+     "Checkpoints are the detection sites downstream, in order: Penticton, the Okanagan Channel, Zosel Dam, the lower Okanogan River, then Wells, Rocky Reach, Rock Island, Priest Rapids, McNary, John Day, The Dalles and Bonneville dams on the Columbia, and finally the Columbia estuary.",
+     goto = "Migration", rel = c("antenna", "route")),
+  nk("farthest", c("what does farthest checkpoint mean", "farthest checkpoint"),
+     "It is the checkpoint furthest downstream where the fish was detected. The fish may have gone further without being read.",
+     rel = c("why_undetected")),
+  nk("why_undetected", c("why are some fish never detected", "why was my fish not detected", "missing fish", "fish not picked up", "why are some fish missing", "where did the fish go"),
+     "Antennas only read tags that pass close by, so some fish slip past unseen. Others do not survive the trip, and some, like hatchery fry, have not left the lake yet. A fish that is not detected is not necessarily dead.",
+     rel = c("detect_vs_surv", "still_migrating")),
+  nk("detect_vs_surv", c("what is the difference between detection and survival", "why is survival different from detection", "detection vs survival"),
+     "Detection rate is the share of fish read at a checkpoint. Survival is the share still alive there. They differ because live fish can pass without being read. The survival model uses fish that were missed at one site but seen further down to work out how often fish are missed, and corrects for it.",
+     goto = "Survival", rel = c("cjs", "det_prob")),
+  nk("detection_rate", c("what is detection rate", "what does detection rate mean", "percent detected"),
+     "The share of fish detected at a checkpoint, counting only fish released upstream of it. It mixes survival with the chance of being read, so the true share that got there is usually higher.",
+     goto = "Charts", rel = c("detect_vs_surv", "live_reached")),
+  nk("funnel", c("what is the survival funnel", "season funnel", "what does the funnel show"),
+     "The funnel shows the share of fish detected at each checkpoint, from the top of the river to the ocean. It shrinks as fish die or slip past antennas unseen, so it is a detection funnel, not a pure survival estimate.",
+     goto = "Overview", rel = c("detect_vs_surv")),
+  nk("survival", c("what is survival", "how is survival estimated", "what does survival mean here"),
+     "Survival here is the estimated share of fish still alive at a checkpoint. It comes from the Cormack-Jolly-Seber model, which uses the pattern of detections and misses at downstream sites to separate survival from the chance of being read.",
+     goto = "Survival", rel = c("cjs", "live_survival")),
+  nk("cjs", c("what is cormack jolly seber", "what is cjs", "what model do you use", "how does the survival model work"),
+     "The Cormack-Jolly-Seber (CJS) model is the standard way to estimate survival from tagged animals. If a fish was missed at Rocky Reach but seen at Bonneville, it must have been alive at Rocky Reach. Counting cases like that tells the model how often antennas miss fish, and from there it estimates survival between checkpoints.",
+     goto = "Survival", rel = c("lambda", "det_prob")),
+  nk("lambda", c("what is lambda", "what does lambda mean", "lambda in the table"),
+     "Lambda is survival through the last stretch multiplied by the chance of being detected at the last checkpoint. With no sites further down to check against, the model cannot separate the two, so lambda is not survival on its own.",
+     goto = "Survival", rel = c("cjs", "det_prob")),
+  nk("det_prob", c("what is detection probability", "chance of detection", "how often are fish missed"),
+     "The chance that a live fish passing a checkpoint is actually read by its antennas. It changes with river flow, spill at the dams and how the antennas are set up.",
+     rel = c("detect_vs_surv", "antenna")),
+  nk("unstable", c("what does unstable mean", "why is an estimate unstable", "estimate is 100 percent", "survival is 1"),
+     "An estimate near 0% or 100%, or with a very large standard error, is marked unstable. It usually means too few fish were detected for the model to work out a real value.",
+     rel = c("se", "survival")),
+  nk("se", c("what is standard error", "what are the error bars", "what does the bar mean"),
+     "Standard error shows how uncertain an estimate is. The true value is usually within about two standard errors either side. On the charts it is drawn as the bars around each point.",
+     rel = c("unstable", "pvalue")),
+  nk("harmonic", c("what is harmonic mean", "arithmetic vs harmonic mean", "what is arithmetic mean", "which average is used"),
+     "Both are averages of travel time. The arithmetic mean is the usual average. The harmonic mean gives less weight to the slowest fish, so a few stragglers don't drag it up; it is the standard way PIT-tag studies report travel time.",
+     rel = c("travel_time", "live_days")),
+  nk("travel_time", c("what is travel time", "why does travel time vary", "why are some fish slow"),
+     "Travel time is the number of days from release to a fish's first detection at a checkpoint. It varies with fish size, river flow, water temperature, spill at the dams and how long a fish lingers in lakes or reservoirs.",
+     goto = "Charts", rel = c("harmonic", "live_days")),
+  nk("pvalue", c("what is a p value", "what does significant mean", "explain p values", "statistically significant"),
+     "A p-value is how often chance alone would produce a gap at least as big as the one you see, if the groups really did not differ. Under 0.05 usually counts as a real difference. It does not tell you how big the difference is, or why it happened.",
+     rel = c("live_pvalue", "holm")),
+  nk("holm", c("what is holm adjusted", "why are p values adjusted", "pairwise table"),
+     "When you compare many pairs at once, some will look different by luck alone. Holm adjustment raises each p-value to correct for that, so only differences that hold up are flagged.",
+     rel = c("pvalue", "tests")),
+  nk("tests", c("which statistical tests do you use", "what is fisher exact test", "what is wilcoxon", "what is kruskal wallis", "what is a z test"),
+     "Detection shares are compared with Fisher's exact test (two groups) or a chi-squared test (three or more). Travel days and pace use the Wilcoxon rank-sum test (two groups) or Kruskal-Wallis (three or more). Survival estimates are compared with a z-test.",
+     rel = c("pvalue", "holm")),
+  nk("recapture", c("what is a recapture", "recaptured fish", "what are recaptures"),
+     "A recapture is a tagged fish caught again, for example in a trap or during sampling, and then let go. Recaptures are shown for reference only.",
+     goto = "Recaptures", rel = c("recap_count")),
+  nk("recap_count", c("why dont recaptures count", "are recaptures used in survival"),
+     "Recaptures come from separate sampling, not the fixed antennas, so they are kept out of detection rates, travel times and survival to avoid mixing two different kinds of data.",
+     rel = c("recapture")),
+  nk("still_migrating", c("what does may still be migrating mean", "gold warning", "still migrating", "include release groups that may still be migrating"),
+     "Some groups, especially hatchery fry, spend about a year in a lake before heading to the ocean. If the data end before a group's usual travel time, its low numbers may just mean the fish haven't left yet. Those groups are flagged and left out of the p-values unless you tick the box.",
+     goto = "Survival", rel = c("hatchery_year", "live_zero")),
+  nk("fry_smolt", c("what is a smolt", "what is the difference between fry and smolt", "what is a fry", "what is a juvenile"),
+     "Fry are young fish not long after they emerge from the gravel. Smolts are juveniles that have turned silvery and changed inside to get ready for salt water, and they head down to the ocean. Most Okanagan sockeye spend about a year in a lake before becoming smolts.",
+     rel = c("lifecycle", "hatchery_year")),
+  nk("hatchery_year", c("why do hatchery fish take a year", "why are hatchery fish detected so late", "when do hatchery fish migrate"),
+     "Hatchery fry are released into streams that flow into Okanagan Lake. Like wild sockeye, they rear in the lake for about a year and migrate as smolts the next spring, so they reach the dams roughly 340 to 370 days after release.",
+     rel = c("still_migrating", "fry_smolt")),
+  nk("sites", c("what are the release sites", "where are fish released", "list of populations", "which populations"),
+     "There are six release groups: Skaha Lake, Osoyoos Lake, Okanagan Lake (fish from the rotary screw trap at Penticton), and three ONA Fish Hatchery release sites at Equesis Creek, Mission Creek and Shingle Creek. They are always kept separate, never pooled.",
+     rel = c("screwtrap", "not_pooled")),
+  nk("screwtrap", c("what is a screw trap", "okanagan lake screw trap", "rotary trap"),
+     "A rotary screw trap is a floating, cone-shaped trap that turns in the current and gently catches young fish moving downstream. The Okanagan Lake group are fish caught this way in the Okanagan River channel at Penticton, then tagged and released.",
+     rel = c("sites")),
+  nk("not_pooled", c("why are hatchery and lake fish separate", "why not combine populations", "why not pool"),
+     "Hatchery fry and lake-reared fish have different histories, release places and timing, so pooling them would blur real differences. The dashboard always keeps each release site separate.",
+     rel = c("sites", "compare")),
+  nk("distance", c("why do osoyoos fish survive better", "is skaha survival lower", "why do lakes differ"),
+     "Part of the difference is distance. Skaha Lake fish travel further and pass more river, lakes and structures before reaching the Columbia than Osoyoos Lake fish, which start near Zosel Dam. For a fair test, compare survival over the same stretch of river.",
+     rel = c("live_survival", "compare")),
+  nk("lifecycle", c("what is the sockeye life cycle", "how long do sockeye live", "sockeye life history"),
+     "Sockeye hatch in gravel over winter, emerge as fry in spring and usually spend about a year in a lake. They migrate to the Pacific as smolts, grow at sea for usually two to three years, then return to their home river to spawn, turning bright red with a green head. Sockeye die after spawning.",
+     rel = c("fry_smolt", "route")),
+  nk("route", c("how far do they travel", "how many dams", "how far is the ocean", "how long is the trip"),
+     "From Penticton to the mouth of the Columbia River is roughly 1,050 river kilometres. On the way, Okanagan sockeye pass nine dams on the Columbia River: Wells, Rocky Reach, Rock Island, Wanapum, Priest Rapids, McNary, John Day, The Dalles and Bonneville.",
+     rel = c("checkpoint", "live_days")),
+  nk("kokanee", c("what is the difference between kokanee and sockeye", "what is a kokanee"),
+     "Kokanee are the same species as sockeye but spend their whole lives in fresh water. Sockeye go to the ocean and come back much bigger.",
+     rel = c("lifecycle")),
+  nk("why_red", c("why are sockeye red", "why do sockeye turn red"),
+     "Sockeye turn bright red with a green head when they return to spawn. The red comes from pigments called carotenoids, stored from their ocean diet.",
+     rel = c("lifecycle")),
+  nk("temperature", c("how does temperature affect sockeye", "thermal barrier", "warm water", "water temperature"),
+     "Warm water stresses sockeye. When the Okanogan River gets warmer than about 21 degrees C in summer, returning adults often hold in cooler water and delay their migration until it cools.",
+     rel = c("route", "lifecycle")),
+  nk("data_source", c("where does the data come from", "what is ptagis", "data source"),
+     "The data come from PTAGIS, the Columbia Basin PIT Tag Information System, which collects tagging and detection records from across the basin. The dashboard reads exports of the tagging and detection (interrogation) records.",
+     rel = c("live_data", "upload_lag")),
+  nk("upload_lag", c("why are recent detections missing", "data lag", "is the data up to date"),
+     "Detection records reach PTAGIS after a delay, sometimes weeks, so the most recent months can look incomplete. Check again after the next data export.",
+     rel = c("live_data", "still_migrating"))
+)
+names(NERKI_KB) <- vapply(NERKI_KB, function(e) e$id, "")
+
+NERKI_CHIPS <- list(
+  Overview = c("What is a PIT tag?", "How many fish reached Bonneville?", "What is the survival funnel?"),
+  Explore = c("How do I export the data?", "What do the columns mean?", "How do I search for a tag?"),
+  Charts = c("How do I export a plot?", "What is detection rate?", "Why does travel time vary?"),
+  Journeys = c("How do I follow one fish?", "What is a checkpoint?", "What does farthest checkpoint mean?"),
+  Migration = c("How does the migration animation work?", "What is the spotlight fish?", "Where are the checkpoints?"),
+  Recaptures = c("What is a recapture?", "Why don't recaptures count?"),
+  Speed = c("Which fish is fastest?", "What does km per day mean?", "Why do hatchery fish look slower?"),
+  Survival = c("What is lambda?", "Why is survival different from detection?", "What does this p-value mean?"),
+  Photos = c("How do I add photos?", "Where do photos come from?"),
+  default = c("What can you help with?", "How do I use this site?", "What is a PIT tag?")
+)
+
+# --- text normalising and matching ---
+# places and populations mentioned in a question
+NK_CP <- c(penticton = "PEN", okchannel = "OKC", zosel = "ZSL", malott = "OKL", wells = "WEL", rockyreach = "RRJ",
+           rockisland = "RIS", priestrapids = "PRD", mcnary = "MCJ", johnday = "JDJ", dalles = "TDA", bonneville = "BON",
+           ocean = "EST")
+NK_POP <- c(osoyoos = "OSOYOL", skaha = "SKATAL", okanaganlake = "OKANR", screwtrap = "OKANR", equesis = "EQUESC",
+            mission = "MISS3C", shingle = "SHINGC")
+NK_STOP <- c("a", "an", "the", "is", "are", "was", "were", "be", "been", "do", "does", "did", "i", "me", "my", "we", "you",
+             "your", "it", "its", "this", "that", "these", "those", "of", "to", "in", "on", "for", "and", "or", "what", "whats",
+             "how", "when", "where", "which", "who", "can", "could", "should", "would", "will", "there", "their", "with",
+             "about", "from", "at", "by", "as", "so", "if", "any", "some", "get", "have", "has", "had", "tell", "explain",
+             "please", "show", "nerki", "just", "really", "here", "out", "up", "into", "than", "too")
+NK_PHRASE <- c("p value" = "pvalue", "p values" = "pvalue", "rocky reach" = "rockyreach", "the dalles" = "dalles",
+               "john day" = "johnday", "priest rapids" = "priestrapids", "rock island" = "rockisland", "screw trap" = "screwtrap",
+               "okanagan lake" = "okanaganlake", "okanagan channel" = "okchannel", "lower okanogan" = "malott",
+               "harmonic mean" = "harmonicmean", "arithmetic mean" = "arithmeticmean", "standard error" = "standarderror",
+               "cormack jolly seber" = "cjs", "follow the sun" = "followsun", "km per day" = "kmday", "per day" = "kmday",
+               "error bars" = "standarderror", "dark mode" = "darkmode", "night mode" = "darkmode", "made it" = "reach",
+               "got to" = "reach", "pit tag" = "pittag", "z test" = "ztest", "chi squared" = "chisquared",
+               "picked up" = "detect", "the ocean" = "ocean", "fish ladder" = "antenna")
+NK_SYN <- c(download = "export", save = "export", saving = "export", chart = "plot", graph = "plot", figure = "plot",
+            csv = "table", spreadsheet = "table", excel = "table", arrive = "reach", arrived = "reach", reached = "reach",
+            reaching = "reach", survive = "survival", survived = "survival", surviving = "survival", alive = "survival",
+            die = "survival", died = "survival", dead = "survival", mortality = "survival", death = "survival",
+            detected = "detect", detection = "detect", detections = "detect", detecting = "detect", seen = "detect",
+            spotted = "detect", missed = "detect", missing = "detect", fastest = "fast", quickest = "fast", quick = "fast",
+            speed = "fast", pace = "fast", faster = "fast", slowest = "slow", slower = "slow", salmon = "sockeye",
+            tagged = "tag", tags = "tag", tagging = "tag", pit = "pittag", chip = "pittag", antennas = "antenna",
+            array = "antenna", arrays = "antenna", reader = "antenna", readers = "antenna", dams = "dam",
+            populations = "population", sites = "population", site = "population", stock = "population", group = "population",
+            groups = "population", lakes = "lake", years = "year", dates = "date", significant = "pvalue",
+            significance = "pvalue", tabs = "tab", colours = "colour", color = "colour", colors = "colour", themes = "theme",
+            fonts = "font", typeface = "font", photos = "photo", pictures = "photo", picture = "photo", images = "photo",
+            image = "photo", pics = "photo", ocean = "ocean", sea = "ocean", pacific = "ocean", estuary = "ocean",
+            fry = "fry", smolts = "smolt", juveniles = "juvenile", released = "release", releases = "release",
+            releasing = "release", stocked = "release", greyed = "grey", gray = "grey", froze = "frozen", stuck = "frozen",
+            numbers = "number", count = "number", total = "number", much = "many", days = "day", takes = "take",
+            took = "take", taking = "take", travelling = "travel", traveling = "travel", travels = "travel")
+nk_tokens <- function(x) {
+  x <- tolower(paste(x, collapse = " "))
+  x <- gsub("[-_/]", " ", x); x <- gsub("[^a-z0-9 ]", " ", x); x <- gsub("\\s+", " ", x)
+  for (p in names(NK_PHRASE)) x <- gsub(paste0("\\b", p, "\\b"), NK_PHRASE[[p]], x)
+  w <- strsplit(trimws(x), " ", fixed = TRUE)[[1]]
+  w <- ifelse(w %in% names(NK_SYN), NK_SYN[w], w)
+  w <- w[nchar(w) > 1 & !(w %in% NK_STOP)]
+  keep <- w %in% c(names(NK_CP), names(NK_POP), "dalles", "always", "series", "species", "analysis", "lambdas")
+  w <- ifelse(!keep & nchar(w) > 4 & grepl("s$", w) & !grepl("ss$", w), sub("s$", "", w), w)
+  unique(unname(w))
+}
+NK_SAMPLES <- do.call(rbind, lapply(NERKI_KB, function(e) data.frame(id = e$id, q = e$q, stringsAsFactors = FALSE)))
+NK_SAMPLES$tok <- lapply(NK_SAMPLES$q, nk_tokens)
+NK_IDF <- local({ v <- unlist(NK_SAMPLES$tok); df <- table(v); log((nrow(NK_SAMPLES) + 1) / (as.numeric(df) + 0.5)) + 1 -> w; setNames(w, names(df)) })
+nk_vec <- function(tok) { tok <- tok[tok %in% names(NK_IDF)]; if (!length(tok)) return(numeric()); setNames(NK_IDF[tok], tok) }
+NK_SAMPLES$vec <- lapply(NK_SAMPLES$tok, nk_vec)
+nk_match <- function(text) {
+  tok <- nk_tokens(text); v <- nk_vec(tok)
+  if (!length(v)) return(list(best = NA, score = 0, top = character(), tokens = tok))
+  unknown <- setdiff(tok, c(names(NK_IDF), names(NK_CP), names(NK_POP), "mean", "means", "meaning"))
+  extra <- length(unknown) * median(NK_IDF)^2
+  sc <- vapply(NK_SAMPLES$vec, function(s) {
+    if (!length(s)) return(0)
+    common <- intersect(names(v), names(s)); if (!length(common)) return(0)
+    sum(v[common] * s[common]) / (sqrt(sum(v^2) + extra) * sqrt(sum(s^2)))
+  }, 0)
+  best <- tapply(sc, NK_SAMPLES$id, max); best <- sort(best, decreasing = TRUE)
+  list(best = names(best)[1], score = unname(best[1]), top = names(best)[best > 0.12][1:min(3, sum(best > 0.12))], tokens = tok)
+}
+
+nerki_svg <- function(s = "a") HTML(sprintf('<svg viewBox="0 0 140 120" aria-hidden="true">
+<defs><linearGradient id="nkb%1$s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c6878"/><stop offset=".42" stop-color="#8fcbd6"/><stop offset=".68" stop-color="#e6f5f7"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+<radialGradient id="nkt%1$s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe79a"/><stop offset="1" stop-color="#ffd166" stop-opacity="0"/></radialGradient></defs>
+<g><animateTransform attributeName="transform" type="translate" values="0 0; 0 -3; 0 0" dur="3s" repeatCount="indefinite"/>
+<g><animateTransform attributeName="transform" type="rotate" values="-9 26 62; 9 26 62; -9 26 62" dur="1.1s" repeatCount="indefinite"/>
+<path d="M27 62 L7 45 C12 55 12 69 7 79 Z" fill="#2c6878"/><path d="M24 62 L12 52 C14 58 14 66 12 72 Z" fill="#5c97a3"/></g>
+<path d="M60 34 L67 21 L78 35 Z" fill="#2c6878"/><path d="M38 41 L42 35 L46 42 Z" fill="#2c6878"/>
+<path d="M23 62 C31 37 70 28 98 39 C113 45 122 54 124 62 C122 72 112 81 97 85 C71 94 33 89 23 62 Z" fill="url(#nkb%1$s)" stroke="#24525d" stroke-width="1.6"/>
+<g fill="#4f8592" opacity=".38"><ellipse cx="45" cy="57" rx="4" ry="7"/><ellipse cx="58" cy="55" rx="4" ry="7.5"/><ellipse cx="71" cy="55" rx="4" ry="7.5"/><ellipse cx="84" cy="56" rx="3.5" ry="6.5"/></g>
+<circle cx="66" cy="72" r="9" fill="url(#nkt%1$s)"><animate attributeName="r" values="6;10;6" dur="2.2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".9;.35;.9" dur="2.2s" repeatCount="indefinite"/></circle>
+<rect x="61" y="70" width="10" height="4" rx="2" fill="#ffd166" stroke="#b8862b" stroke-width=".8"/>
+<path d="M96 44 C100 52 100 64 96 74" fill="none" stroke="#24525d" stroke-width="1.3" stroke-linecap="round"/>
+<g><animateTransform attributeName="transform" type="rotate" values="0 86 70; 22 86 70; 0 86 70" dur="1.6s" repeatCount="indefinite"/>
+<path d="M86 70 C94 73 97 81 91 86 C88 80 85 76 84 72 Z" fill="#5c97a3" stroke="#24525d" stroke-width="1"/></g>
+<ellipse cx="104" cy="67" rx="4" ry="2.6" fill="#f3a3a0" opacity=".75"/>
+<ellipse cx="106" cy="53" rx="9" ry="9" fill="#fff" stroke="#24525d" stroke-width="1.4"><animate attributeName="ry" values="9;9;1;9" keyTimes="0;.9;.94;1" dur="4.5s" repeatCount="indefinite"/></ellipse>
+<ellipse cx="108" cy="54" rx="5" ry="5.2" fill="#18292e"><animate attributeName="ry" values="5.2;5.2;.6;5.2" keyTimes="0;.9;.94;1" dur="4.5s" repeatCount="indefinite"/></ellipse>
+<circle cx="110" cy="51.5" r="1.8" fill="#fff"><animate attributeName="opacity" values="1;1;0;1" keyTimes="0;.9;.94;1" dur="4.5s" repeatCount="indefinite"/></circle>
+<path d="M113 67 Q118 71 122 65.5" fill="none" stroke="#18292e" stroke-width="2" stroke-linecap="round"/></g>
+<g fill="none" stroke="#7cc3d1" stroke-width="1.4"><circle cx="128" cy="52" r="3"><animate attributeName="cy" values="56;18" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" repeatCount="indefinite"/></circle>
+<circle cx="133" cy="50" r="2"><animate attributeName="cy" values="54;12" dur="2.6s" begin="1.1s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" begin="1.1s" repeatCount="indefinite"/></circle></g>
+</svg>', s))
+
+nerki_ui <- div(id = "nerki",
+  div(id = "nk_hello", class = "nk-hello",
+      tags$button(type = "button", class = "nk-hello-x", `aria-label` = "Close", HTML("&times;")),
+      HTML("Hi, I am <b>Nerki</b>, your AI helper. Ask me anything about the sockeye!")),
+  tags$button(type = "button", id = "nk_launch", class = "nk-launch", `aria-label` = "Open Nerki, your helper",
+              span(class = "nk-ring"), nerki_svg("l")),
+  div(id = "nk_panel", class = "nk-panel", role = "dialog", `aria-label` = "Nerki helper",
+      div(class = "nk-head", div(class = "nk-av", nerki_svg("h")),
+          div(class = "nk-ht", tags$b("Nerki"), span("Your helper (beta). Answers come from a built-in guide.")),
+          tags$button(type = "button", id = "nk_close", class = "nk-close", `aria-label` = "Close", HTML("&times;"))),
+      div(id = "nk_msgs", class = "nk-msgs", `aria-live` = "polite"),
+      div(id = "nk_chips", class = "nk-chips"),
+      tags$form(id = "nk_form", class = "nk-inp", autocomplete = "off",
+                tags$input(id = "nk_text", type = "text", placeholder = "Ask Nerki a question...", maxlength = "300", `aria-label` = "Your question"),
+                tags$button(type = "submit", class = "nk-send", `aria-label` = "Send", icon("paper-plane")))))
+
+NERKI_JS <- "
+(function(){
+  var busy = false, greeted = false, n = 0;
+  function q(s){ return document.querySelector(s); }
+  function esc(t){ var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+  function tab(){ var a = q('#tabs li.active a'); return a ? a.getAttribute('data-value') : ''; }
+  function add(html, cls){
+    var m = document.createElement('div'); m.className = 'nk-m' + (cls ? ' ' + cls : ''); m.innerHTML = html;
+    var box = q('#nk_msgs'); box.appendChild(m); box.scrollTop = box.scrollHeight; return m;
+  }
+  function chips(list){
+    var c = q('#nk_chips'); c.innerHTML = '';
+    (list || []).forEach(function(s){ var b = document.createElement('button'); b.type = 'button'; b.className = 'nk-chip'; b.textContent = s;
+      b.onclick = function(){ ask(s); }; c.appendChild(b); });
+  }
+  function send(text){ n++; if (window.Shiny && Shiny.setInputValue) Shiny.setInputValue('nerki_q', {text: text, tab: tab(), n: n}, {priority: 'event'}); }
+  function ask(text){
+    text = (text || '').trim(); if (!text || busy) return;
+    add(esc(text), 'me'); if (window.appSnd) appSnd.play('tick'); q('#nk_text').value = ''; busy = true;
+    add('<span class=nk-dots><i></i><i></i><i></i></span>', 'typing');
+    send(text);
+    setTimeout(function(){ if (busy) done({html: 'Sorry, I lost the thread there. Please try again in a moment.'}); }, 12000);
+  }
+  function done(d){
+    var t = q('#nk_msgs .typing'); if (t) t.parentNode.removeChild(t);
+    if (d.html) { add(d.html); if (window.appSnd) appSnd.play('blub'); } if (d.chips) chips(d.chips); busy = false;
+  }
+  function open(){
+    var p = q('#nk_panel'); p.classList.add('open'); q('#nk_launch').classList.add('hide'); hello(false); if (window.appSnd) appSnd.play('pop');
+    if (!greeted) { greeted = true; busy = true; add('<span class=nk-dots><i></i><i></i><i></i></span>', 'typing'); send('__hello__'); }
+    setTimeout(function(){ var i = q('#nk_text'); if (i) i.focus(); }, 200);
+  }
+  function close(){ q('#nk_panel').classList.remove('open'); q('#nk_launch').classList.remove('hide'); }
+  function hello(on){ var h = q('#nk_hello'); if (h) h.classList.toggle('show', !!on); }
+  if (window.Shiny && Shiny.addCustomMessageHandler) Shiny.addCustomMessageHandler('nerki_a', function(d){ setTimeout(function(){ done(d); }, 450); });
+  document.addEventListener('DOMContentLoaded', function(){
+    q('#nk_launch').addEventListener('click', open);
+    q('#nk_close').addEventListener('click', close);
+    q('#nk_hello').addEventListener('click', function(e){ if (e.target.closest('.nk-hello-x')) hello(false); else open(); });
+    q('#nk_form').addEventListener('submit', function(e){ e.preventDefault(); ask(q('#nk_text').value); });
+    q('#nk_msgs').addEventListener('click', function(e){
+      var g = e.target.closest('.nk-go'); if (!g) return;
+      var a = q('#tabs a[data-value=\"' + g.getAttribute('data-tab') + '\"]'); if (a) $(a).tab('show');
+    });
+    $(document).on('shown.bs.tab', function(){ if (greeted && !busy && q('#nk_panel').classList.contains('open')) send('__chips__'); });
+    setTimeout(function(){
+      var seen = null; try { seen = sessionStorage.getItem('nk_hello'); } catch(e) {}
+      if (window.__tourActive || seen) return;
+      hello(true); try { sessionStorage.setItem('nk_hello', '1'); } catch(e) {}
+      setTimeout(function(){ hello(false); }, 12000);
+    }, 3000);
+  });
+})();
+"
+
 screensaver_ui <- div(id = "ss",
   div(id = "ss_img0", class = "ss-img"), div(id = "ss_img1", class = "ss-img"), div(class = "ss-shade"),
   div(class = "ss-hint", "Move the mouse or press any key to return"),
@@ -1897,14 +2407,21 @@ settings_ui <- div(id = "side_settings", style = "display:none;",
                   tags$option(value = "5", "after 5 min"), tags$option(value = "10", "after 10 min"),
                   tags$option(value = "15", "after 15 min"))),
   tags$button(type = "button", id = "ss_preview", class = "btn btn-default btn-sm", "Preview screensaver"),
+  h4("Sound", style = "margin-top:14px;"),
+  div(class = "sun-row",
+      div(div(class = "set-t", "Pops and chimes"),
+          div(class = "set-d", "Soft sounds when Nerki speaks, when Go runs, when an export starts, when a warning appears and when tabs change. Browsers keep a page silent until your first click or tap.")),
+      div(class = "seg", tags$button(type = "button", class = "snd-b", `data-snd` = "on", "On"),
+          tags$button(type = "button", class = "snd-b", `data-snd` = "off", "Off"))),
   div(class = "small-note", "Settings are saved in this browser only. All times on the dashboard are UTC."))
 
 ui <- fluidPage(
   useShinyjs(),
-  tags$head(tags$title("Let's Follow the Sockeye (Beta)"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SS_JS)), tags$script(HTML(TOUR_JS)), tags$script(HTML(GLOSS_JS)),
+  tags$head(tags$title("Let's Follow the Sockeye (Beta)"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SOUND_JS)), tags$script(HTML(SS_JS)), tags$script(HTML(TOUR_JS)), tags$script(HTML(GLOSS_JS)), tags$script(HTML(NERKI_JS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
 
   screensaver_ui,
+  nerki_ui,
   div(class = "topbar",
       div(class = "brand", div(class = "logo", logo_svg("t")),
           div(h1("Let's Follow the Sockeye", span(class = "beta-badge", "BETA")),
@@ -2934,6 +3451,132 @@ server <- function(input, output, session) {
   })
   output$dl_speed <- dl_csv("fish_speed", function() {
     s <- speed_f(); s[, c("pit", "site_full", "from", "to", "km", "days", "pace")]
+  })
+
+
+  # ---------------- Nerki, the built-in helper ----------------
+  nk_chips_for <- function(tab) { ch <- NERKI_CHIPS[[tab]]; if (is.null(ch)) NERKI_CHIPS$default else ch }
+  nk_first_q <- function(ids) { ids <- ids[ids %in% names(NERKI_KB)]
+    vapply(ids, function(i) { s <- NERKI_KB[[i]]$q[1]; paste0(toupper(substr(s, 1, 1)), substr(s, 2, nchar(s)), "?") }, "", USE.NAMES = FALSE) }
+  nk_go <- function(tabname) if (is.null(tabname)) "" else sprintf("<br><button type=button class=nk-go data-tab=\"%s\">Open the %s tab</button>", tabname, tabname)
+  nk_sel_txt <- function() {
+    s <- sel(); yrs <- if (length(s$years)) paste(sort(s$years), collapse = ", ") else "all years"
+    sprintf("<b>%s</b>, %s", pop_name(), yrs)
+  }
+  nk_cp_from <- function(tok, default = "BON") { hit <- intersect(tok, names(NK_CP)); if (length(hit)) NK_CP[[hit[1]]] else default }
+  nk_pop_from <- function(tok) { hit <- intersect(tok, names(NK_POP)); if (length(hit)) unique(unname(NK_POP[hit])) else character() }
+  nk_live <- function(kind, tok) {
+    b <- raw(); tg <- tags_f()
+    if (is.null(b) || !nrow(tg)) return("There are no fish in the current selection. Pick a population and years in the left panel and press <b>Go</b>, then ask me again.")
+    pops <- nk_pop_from(tok)
+    if (length(pops)) { tg2 <- tg[tg$relsite %in% pops, , drop = FALSE]; if (nrow(tg2)) tg <- tg2 }
+    cp <- cp_f(); cp <- cp[cp$pit %in% tg$pit, , drop = FALSE]
+    switch(kind,
+      released = {
+        n <- table(tg$site_full)
+        paste0("In your selection (", nk_sel_txt(), ") <b>", fmt_int(nrow(tg)), "</b> fish were tagged and released",
+               if (length(n) > 1) paste0(": ", paste(sprintf("%s %s", names(n), fmt_int(as.integer(n))), collapse = "; ")) else "", ".")
+      },
+      reached = {
+        code <- nk_cp_from(tok); note <- ""
+        if (code == "EST" && !any(cp$cp == "EST")) { code <- "BON"; note <- "Few fish are read in the estuary, so here is Bonneville Dam, the last dam before the ocean. " }
+        k <- match(code, CHECKPOINTS$cp); lab <- CHECKPOINTS$label[k]
+        r <- rate_by_site(tg, cp); r <- r[r$cp_idx == k, , drop = FALSE]
+        if (!nrow(r) || sum(r$n_applicable) == 0) return(sprintf("None of the fish in your selection were released upstream of %s, so I can't count them there.", lab))
+        tot <- sprintf("<b>%s</b> of %s fish (%.1f%%)", fmt_int(sum(r$n_detected)), fmt_int(sum(r$n_applicable)), 100 * sum(r$n_detected) / sum(r$n_applicable))
+        by <- if (nrow(r) > 1) paste0(" By release site: ", paste(sprintf("%s %s of %s", r$site_full, fmt_int(r$n_detected), fmt_int(r$n_applicable)), collapse = "; "), ".") else ""
+        paste0(note, "In your selection, ", tot, " were detected at <b>", lab, "</b>.", by,
+               " Detected means read by the antennas; some fish pass without being read, so the true number that got there is likely higher.")
+      },
+      days = {
+        code <- nk_cp_from(tok); note <- ""
+        if (code == "EST" && !any(cp$cp == "EST")) { code <- "BON"; note <- "Few fish are read in the estuary, so here is Bonneville Dam, the last dam before the ocean. " }
+        k <- match(code, CHECKPOINTS$cp); lab <- CHECKPOINTS$label[k]
+        a <- merge(cp[cp$idx == k, c("pit", "first_det")], tg[, c("pit", "reldt_posix", "site_full")], by = "pit")
+        if (!nrow(a)) return(sprintf("No fish in your selection have been detected at %s yet, so I can't work out a travel time.", lab))
+        a$d <- as.numeric(difftime(a$first_det, a$reldt_posix, units = "days"))
+        one <- function(x) sprintf("median <b>%.1f days</b> (middle half %.0f to %.0f days, %s fish)", median(x), quantile(x, .25), quantile(x, .75), fmt_int(length(x)))
+        g <- split(a$d, a$site_full)
+        paste0(note, "From release to the first detection at <b>", lab, "</b>: ",
+               if (length(g) > 1) paste(sprintf("%s %s", names(g), vapply(g, one, "")), collapse = "; ") else one(a$d), ".",
+               " That counts only fish that were detected there.")
+      },
+      fast = {
+        s <- speed_f(); s <- s[s$pit %in% tg$pit, , drop = FALSE]
+        if (!nrow(s)) return("No fish in your selection were seen at two or more checkpoints yet, so there is no pace to compare.")
+        slow <- "slow" %in% tok; i <- if (slow) which.min(s$pace) else which.max(s$pace)
+        sprintf("The %s fish in your selection is <b>%s</b> from %s: %s km from %s to %s in %.1f days, about <b>%.1f km per day</b>.",
+                if (slow) "slowest" else "fastest", s$pit[i], s$site_full[i], fmt_int(s$km[i]), s$from[i], s$to[i], s$days[i], s$pace[i])
+      },
+      selection = {
+        s <- sel(); dts <- if (length(s$dates) == 2) sprintf(", released %s to %s", format(s$dates[1]), format(s$dates[2])) else ""
+        sprintf("You are looking at %s%s: %s fish. You are on the <b>%s</b> tab. Change the selection in the left panel and press Go.",
+                nk_sel_txt(), dts, fmt_int(nrow(tg)), nk_tab)
+      },
+      survival = {
+        d <- surv_long(); d <- d[d$type == "Survival" & !d$unstable, , drop = FALSE]
+        if (!nrow(d)) return("I don't have a stable survival estimate for this selection yet; usually too few fish were detected. Try more fish or a different year.")
+        d <- head(d, 6)
+        paste0("Estimated survival for your selection: ", paste(sprintf("%s, %s: <b>%.0f%%</b> (give or take %.0f%%)", d$group_label, sub("^Survival: ", "", d$parameter), 100 * d$estimate, 200 * d$se), collapse = "; "),
+               ". These come from the Cormack-Jolly-Seber model, which corrects for fish the antennas missed.")
+      },
+      pvalue = {
+        if (n_pops_sel() < 2) {
+          if (length(unique(tg$site_full)) >= 2 && nrow(mig_flagged()))
+            return("Your selection has groups that may still be migrating, so they are left out of the p-values and fewer than two remain to compare. Tick <b>Include release groups that may still be migrating</b> on the Survival tab to compare them anyway, keeping the timing caveat in mind.")
+          return(paste0("A p-value needs two or more populations to compare, and your selection has one. ", NERKI_KB$pvalue$a))
+        }
+        r <- pop_cmp()$detect; paste0(pop_blurb(r), " See the Survival tab for the travel-time and pace comparisons too.")
+      },
+      data = {
+        last <- suppressWarnings(max(b$cp$last_det, na.rm = TRUE))
+        paste0("Data loaded: ", paste(sprintf("%s (exported %s)", b$datasets$dataset, format(b$datasets$date, "%b %d, %Y")), collapse = "; "), ".",
+               if (is.finite(last)) sprintf(" The latest detection in the data is %s (UTC).", format(last, "%b %d, %Y")) else "",
+               " Detection records reach PTAGIS after a delay, so the most recent weeks may be incomplete.")
+      },
+      zero = {
+        f <- mig_flagged()
+        if (nrow(f)) paste0("Some groups in your selection may still be migrating: ",
+                             paste(sprintf("%s %d", f$site_full, f$year), collapse = "; "),
+                             ". Their fish usually take longer to reach Rocky Reach than the data cover, so low or zero detections there likely mean they haven't left yet, not that they died.")
+        else paste0(NERKI_KB$why_undetected$a, " In your selection, ", fmt_int(n_distinct(cp$pit)), " of ", fmt_int(nrow(tg)), " fish have been detected downstream so far.")
+      },
+      "I'm not sure about that one yet.")
+  }
+  nk_tab <- "Overview"
+  nerki_answer <- function(text, tab) {
+    nk_tab <<- if (nzchar(tab)) tab else "Overview"
+    chips <- nk_chips_for(tab)
+    if (identical(text, "__hello__"))
+      return(list(html = "Hi, I am <b>Nerki</b>, your AI helper! I can explain this dashboard, the numbers on your screen and how fish tracking works. Tap a question below or type your own.", chips = chips))
+    if (identical(text, "__chips__")) return(list(chips = chips))
+    low <- tolower(trimws(text))
+    if (grepl("^(hi|hello|hey|good (morning|afternoon|evening))[ !.]*$", low))
+      return(list(html = "Hello! Ask me anything about the dashboard or about following sockeye down the river.", chips = chips))
+    if (grepl("^(thanks|thank you|thx|ty|cheers|great|awesome|cool|ok|okay)[ !.]*$", low))
+      return(list(html = "You're welcome! Ask me anything else any time.", chips = chips))
+    m <- nk_match(text)
+    if (!is.na(m$best) && m$score >= 0.42) {
+      e <- NERKI_KB[[m$best]]
+      html <- if (!is.null(e$live)) nk_live(e$live, m$tokens) else e$a
+      if (e$id == "who_made" && nzchar(NERKI_CONTACT)) html <- paste0(html, " For questions: ", NERKI_CONTACT, ".")
+      rel <- nk_first_q(e$rel)
+      return(list(html = paste0(html, nk_go(e$goto)), chips = if (length(rel)) rel else chips))
+    }
+    message("NERKI_UNANSWERED: ", substr(gsub("[\r\n]+", " ", text), 1, 200))
+    if (length(m$top) && !is.na(m$top[1]) && m$score >= 0.2)
+      return(list(html = "I'm not quite sure what you mean. Did you mean one of these?", chips = nk_first_q(m$top)))
+    list(html = paste0("I don't know that one yet, sorry. I'm a built-in guide, so try asking another way, or tap one of the questions below.",
+                       if (nzchar(NERKI_CONTACT)) paste0(" You can also ask a person: ", NERKI_CONTACT, ".") else ""),
+         chips = chips)
+  }
+  observeEvent(input$nerki_q, {
+    qq <- input$nerki_q
+    txt <- substr(as.character(nz(qq$text, "")), 1, 300); tab <- as.character(nz(qq$tab, ""))
+    res <- tryCatch(nerki_answer(txt, tab), error = function(e) {
+      message("NERKI_ERROR: ", conditionMessage(e))
+      list(html = "Sorry, I tripped over something there. Please try asking another way.", chips = nk_chips_for(tab)) })
+    session$sendCustomMessage("nerki_a", res)
   })
 
   # ---------------- Summary report (one-click, self-contained HTML) ----------------

@@ -10,6 +10,12 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.23.0 - 2026-11-10
+- Added: sound. Soft synthesized pops and chimes (made in the browser with Web Audio - no sound files, nothing downloaded): a water-droplet pop when Nerki opens, a blub when Nerki answers, a tick when a question is sent or a tab changes, a rising tone on Go, a two-note chime when an export starts, a little three-note rise when a tour step is completed, and a low tone when a "may still be migrating" warning first appears (at most once per half minute). Browsers keep a page silent until the first click, tap or key press. A new Sound On/Off switch in Settings is saved per browser and is On by default.
+
+## 0.22.0 - 2026-11-10
+- Added: Nerki, the built-in helper. An animated juvenile sockeye sits in a button at the bottom right, greets new visitors once per visit ("Hi, I am Nerki, your AI helper") and opens a chat panel. Questions are matched to a built-in guide of about 80 answers (how to use each tab and control, fish-tracking terms and statistics, Okanagan sockeye basics, data caveats), so no AI service, key or cost is involved and nothing leaves the app. Nine answers are worked out live from the current selection: fish released, fish detected at a named checkpoint (and population), travel days to a checkpoint, fastest or slowest fish, survival estimates, the p-value result, data dates, the current selection, and why detections are low or zero. Suggested questions change with the tab, answers can include an "Open the ... tab" button, unclear questions get "Did you mean" suggestions, and unanswered questions are written to the server log as NERKI_UNANSWERED so new answers can be added. NERKI_CONTACT (empty for now) adds a contact line when set.
+
 ## 0.21.0 - 2026-11-10
 - Added: one-click "Summary report" button in the left panel (under the selection summary). It saves a single self-contained HTML file for the current selection: selection, version and UTC time; headline numbers; releases chart; detection-rate chart and table (checkpoints with no detections left out); travel-time chart and mean table; survival and lambda chart and table with survival p-values; population comparisons with their plain-language notes and any "may still be migrating" warning; data exports loaded; and definitions of the terms used. Open it in any browser; Print > Save as PDF gives a PDF. Each section is built independently, so one failing section does not stop the report.
 
