@@ -10,6 +10,12 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.20.0 - 2026-11-09
+- Changed: the walk-through is now a worked example that first-time users must complete (17 steps): choose Osoyoos Lake only, keep one release year, press Go, read the Overview, open Journeys and click a fish to follow it, open Charts and export the detection-rate plot (PNG), open Explore and export the table (CSV), then Settings. Selection steps unlock when the selection is right; export steps unlock when the export button is pressed. TOUR_VERSION bumped to 2, so everyone sees the new tour once.
+- Changed: much larger welcome window with an animated river intro (a sockeye swims from the Okanagan past the dams to the Pacific while each checkpoint lights up) and a three-point plan of the example.
+- Added: glossary tooltips. Technical terms on the page (p-value, lambda, Cormack-Jolly-Seber, harmonic mean, detection probability, standard error, Holm-adjusted, the statistical tests and others) get a dotted underline and a plain-language definition on hover or tap.
+- Fixed: Release year and Release dates both filter the selection (a fish must match both). Choosing years now moves the date range to the release dates in those years, and a red warning appears under Go if the years and dates do not overlap.
+
 ## 0.19.0 - 2026-11-09
 - Added: game-style walk-through. Required on a browser's first visit (and again whenever TOUR_VERSION is bumped after a big layout change): 10 steps with a progress bar, a spotlight on each control and the rest of the page blocked. Do-it steps unlock only when the user performs the action (open the population list, press Go, open another tab, switch to Settings); a "Stuck? Continue anyway" link appears after 30 seconds so nobody gets locked out. Ends with a "Tutorial complete" badge. The Tour button in the top bar replays it.
 - Added: one-time tips the first time each tab is opened after the tour (Got it / Hide all tips).

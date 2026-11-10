@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.19.0"
+APP_VERSION      <- "0.20.0"
 APP_TIMEZONE     <- "UTC"                             # all app times are UTC (local time-zone rules unsettled)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -1198,7 +1198,8 @@ h1,h2,h3,h4{color:var(--ink);}
 .tour-card.center{left:50% !important;top:50% !important;transform:translate(-50%,-50%);width:430px;text-align:center;}
 .tour-card h4{margin:6px 0;font-size:17px;font-weight:700;color:var(--ink);}
 .tour-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
-.tour-dots{display:flex;gap:4px;} .tour-dots i{width:14px;height:5px;border-radius:3px;background:var(--line);display:block;}
+.tour-top>span:first-child{white-space:nowrap;margin-right:10px;}
+.tour-dots{display:flex;gap:3px;flex-wrap:nowrap;} .tour-dots i{width:9px;height:5px;border-radius:3px;background:var(--line);display:block;}
 .tour-dots i.past{background:var(--accent);opacity:.5;} .tour-dots i.now{background:var(--accent);}
 .tour-do{display:flex;gap:8px;align-items:flex-start;background:var(--soft);border:1px dashed var(--accent);border-radius:10px;padding:8px 10px;margin:10px 0 2px;text-align:left;}
 .tour-do-ico{width:16px;height:16px;border-radius:50%;border:2px solid var(--accent);flex:none;margin-top:2px;position:relative;animation:tourblink 1s ease-in-out infinite;}
@@ -1211,6 +1212,17 @@ h1,h2,h3,h4{color:var(--ink);}
 .tour-next{background:var(--accent);color:var(--on-accent);border:0;border-radius:999px;padding:7px 18px;font-weight:700;}
 .tour-next:disabled{opacity:.35;cursor:not-allowed;}
 .tour-back{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 14px;}
+.tour-card.center{animation:tourpop .45s ease-out;max-height:94vh;overflow:auto;}
+@keyframes tourpop{from{opacity:0;transform:translate(-50%,-46%) scale(.96);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+.tour-card.center.big{width:min(880px,94vw);padding:22px 26px 20px;font-size:14.5px;}
+.tour-card.big h4{font-size:24px;margin:14px 0 6px;}
+.tour-river svg{width:100%;height:auto;display:block;border-radius:14px;}
+.tour-plan{display:block;max-width:460px;text-align:left;margin:12px auto 0;background:var(--soft);border-radius:12px;padding:10px 16px;}
+.tour-plan-h{font-weight:700;margin-bottom:6px;}
+.tour-plan-row{display:flex;align-items:center;gap:10px;margin:4px 0;}
+.tour-plan-row span{width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+.gloss,.gloss-demo{border-bottom:1px dotted var(--muted);cursor:help;}
+.gloss-tip{position:absolute;z-index:9500;display:none;max-width:300px;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.45;padding:8px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);}
 .tour-medal{display:inline-block;background:var(--gold);color:#1f1a0e;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:4px;}
 .tour-badge{width:88px;height:88px;margin:2px auto 6px;} .tour-badge svg{width:100%;height:100%;}
 .tour-tip{position:absolute;z-index:9000;width:310px;max-width:calc(100vw - 16px);background:var(--card);color:var(--ink);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:13px;line-height:1.5;}
@@ -1249,7 +1261,8 @@ table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,10
 @media print{
   .layout{display:block !important;}
   aside.side{position:static !important;margin-bottom:16px;break-inside:avoid;}
-  a.shiny-download-link,.btn-go,.btn-soft,.tour-btn,#tour,.tour-tip{display:none !important;}
+  a.shiny-download-link,.btn-go,.btn-soft,.tour-btn,#tour,.tour-tip,.gloss-tip{display:none !important;}
+  .gloss{border-bottom:0;}
   .card{break-inside:avoid-page;}
 }
 /* tabs as pill bar */
@@ -1508,7 +1521,7 @@ SS_JS <- "
 # Do-it steps unlock only when the user performs the action. After the tour,
 # each tab shows a one-time tip the first time it is opened.
 # -----------------------------------------------------------------------------
-TOUR_VERSION <- "1"
+TOUR_VERSION <- "2"
 
 logo_svg <- function(s = "a") HTML(sprintf(
 '<svg viewBox="0 0 64 64" role="img" aria-label="Sockeye salmon logo">
@@ -1529,37 +1542,103 @@ logo_svg <- function(s = "a") HTML(sprintf(
 <circle cx="32" cy="32" r="30" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
 </svg>', s))
 
+# Animated river intro for the welcome window: a sockeye swims from the Okanagan
+# past the dams to the ocean while each checkpoint lights up (not to scale).
+river_svg <- function() {
+  x0 <- 60; x1 <- 700
+  xs <- seq(x0, x1, length.out = 161); ys <- 118 + 24 * sin((xs - x0) / 92)
+  cum <- c(0, cumsum(sqrt(diff(xs)^2 + diff(ys)^2))); tot <- max(cum)
+  pth <- paste0("M", sprintf("%.1f %.1f", xs[1], ys[1]), paste0(" L", sprintf("%.1f %.1f", xs[-1], ys[-1]), collapse = ""))
+  nm <- c("Okanagan release", "Okanagan Channel", "Zosel Dam", "Wells Dam", "Rocky Reach Dam", "McNary Dam", "Bonneville Dam", "Pacific Ocean")
+  idx <- round(seq(1, length(xs), length.out = length(nm)))
+  cps <- vapply(seq_along(nm), function(k) {
+    j <- idx[k]; t <- 0.85 * cum[j] / tot; t1 <- min(t + 0.012, 0.99); t2 <- min(t + 0.07, 0.995)
+    up <- k %% 2 == 1; ly <- if (up) ys[j] - 20 else ys[j] + 30
+    sprintf(paste0(
+      '<circle cx="%.1f" cy="%.1f" r="7" fill="#7f97a0" stroke="#fff" stroke-width="2">',
+      '<animate attributeName="fill" dur="10s" repeatCount="indefinite" values="#7f97a0;#7f97a0;#ffd166;#ffd166" keyTimes="0;%.3f;%.3f;1"/></circle>',
+      '<circle cx="%.1f" cy="%.1f" r="7" fill="none" stroke="#ffd166" stroke-width="2" opacity="0">',
+      '<animate attributeName="r" dur="10s" repeatCount="indefinite" values="7;7;20;20" keyTimes="0;%.3f;%.3f;1"/>',
+      '<animate attributeName="opacity" dur="10s" repeatCount="indefinite" values="0;0;.9;0;0" keyTimes="0;%.3f;%.3f;%.3f;1"/></circle>',
+      '<text x="%.1f" y="%.1f" text-anchor="middle" font-size="12" font-weight="600" fill="#eaf6f8">%s</text>'),
+      xs[j], ys[j], t, t1, xs[j], ys[j], t, t2, t, t1, t2, xs[j], ly, nm[k])
+  }, "")
+  HTML(paste0(
+    '<svg viewBox="0 0 760 230" role="img" aria-label="Animation of a sockeye migrating from the Okanagan to the Pacific Ocean">',
+    '<defs><linearGradient id="rvbg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#18413c"/><stop offset="1" stop-color="#0f2f45"/></linearGradient></defs>',
+    '<rect width="760" height="230" rx="16" fill="url(#rvbg)"/>',
+    '<path d="M0 70 L40 34 L72 58 L104 22 L146 64 L176 46 L214 78 L0 78 Z" fill="#24584f" opacity=".7"/>',
+    '<path d="M640 200 q15 -8 30 0 t30 0 t30 0 t30 0" fill="none" stroke="#5fb3c9" stroke-width="2" opacity=".5"/>',
+    '<text x="24" y="214" font-size="11" fill="#9fc7cf">Okanagan, BC</text>',
+    '<text x="736" y="24" font-size="11" fill="#9fc7cf" text-anchor="end">Columbia River to the Pacific (not to scale)</text>',
+    '<path d="', pth, '" fill="none" stroke="#3f8fa8" stroke-width="12" stroke-linecap="round" opacity=".55"/>',
+    '<path d="', pth, '" fill="none" stroke="#bfe6ef" stroke-width="2" stroke-dasharray="6 10" opacity=".8">',
+    '<animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.2s" repeatCount="indefinite"/></path>',
+    paste(cps, collapse = ""),
+    '<g><g transform="scale(.62) translate(-30,-32)">',
+    '<path d="M15 33 L5 24.5 C7.5 30 7.5 36 5 41.5 Z" fill="#a8261f"/><path d="M27 22.5 L31 16.5 L36 22 Z" fill="#a8261f"/>',
+    '<path d="M14 33 C20 22 33 19.5 43 24.5 C48 27 51.5 29.5 54 32 C51.5 35 48 37.5 43 38.5 C33 42 21 41 14 33 Z" fill="#e0453a"/>',
+    '<path d="M42.5 24.3 C48 26.6 51.5 29.6 54 32 C51.5 35 48.2 37.4 43.2 38.4 C44.6 34 44.4 29 42.5 24.3 Z" fill="#3a8a63"/>',
+    '<circle cx="48.6" cy="30" r="1.6" fill="#fff"/></g>',
+    '<animateMotion dur="10s" repeatCount="indefinite" rotate="auto" calcMode="linear" keyPoints="0;1;1" keyTimes="0;.85;1" path="', pth, '"/></g>',
+    '</svg>'))
+}
+
 TOUR_STEPS <- list(
-  list(center = TRUE, badge = as.character(logo_svg("w")), next_label = "Start the tour",
+  list(center = TRUE, big = TRUE, river = as.character(river_svg()), next_label = "Let's go",
        title = "Welcome to Let's Follow the Sockeye",
-       body = "This dashboard follows PIT-tagged juvenile sockeye from their release sites in the Okanagan down the Columbia River to the ocean. It is in <b>beta</b>: features and results may change.<br><br>The tour takes about a minute. Some steps ask you to try a control yourself, so you learn it by doing."),
+       body = paste0("Follow PIT-tagged juvenile sockeye from the Okanagan, past the Columbia River dams, to the Pacific. This site is in <b>beta</b>, so features and numbers may change.",
+                     "<div class=tour-plan><div class=tour-plan-h>In this 3-minute walk-through you will work a real example:</div>",
+                     "<div class=tour-plan-row><span>1</span>Choose Osoyoos Lake fish released in 2025</div>",
+                     "<div class=tour-plan-row><span>2</span>Follow one fish down the river</div>",
+                     "<div class=tour-plan-row><span>3</span>Export a plot and a data table</div></div>")),
   list(sel = ".side-tabs", place = "right", title = "Two panels, one switch",
        body = "The left panel has two sides. <b>Filters</b> choose which fish you are looking at. <b>Settings</b> changes how the site looks. You will visit both."),
-  list(sel = "pop", place = "right", doit = "pop", auto = FALSE, title = "Choose your fish",
-       body = "Pick one release site, any combination of sites, or <b>All Populations</b>. Choosing all six sites switches back to All Populations automatically. Hatchery sites and the lakes are kept separate, never pooled.",
-       action = "Open the population list.", nice = "Have a look around the list, then press Next."),
-  list(sel = "#year_ui", place = "right", title = "Release year",
-       body = "Pick one or more release years. All years are selected to start with. Click a year and press Delete or Backspace to remove it; click the box to add it back."),
+  list(sel = "pop", place = "right", doit = "check", check = "pop_osoyoos", auto = TRUE, title = "Choose Osoyoos Lake",
+       body = "This list picks which fish you look at: one release site, any mix of sites, or <b>All Populations</b>. Hatchery sites and the lakes are never pooled.",
+       action = "Open the list and choose <b>Osoyoos Lake</b> only.", nice = "Osoyoos Lake selected."),
+  list(sel = "#year_ui", place = "right", doit = "check", check = "one_year", auto = TRUE, title = "Pick one release year",
+       body = "Years and dates work together: a fish must match both. Picking years now moves the date range to match, so the two can't contradict each other.",
+       action = "Keep only <b>2025</b>: click each other year and press Delete or Backspace.", nice = "One year selected."),
   list(sel = "#date_ui", place = "right", title = "Release dates",
-       body = "Narrow the selection to fish released between two dates. It starts at the full span of the data."),
-  list(sel = "#go", place = "right", doit = "go", auto = TRUE, title = "Press Go to apply",
-       body = "Changes in the left panel do nothing until you press <b>Go</b>, so you can set several filters first. If you change something and forget, a red reminder appears under the button. Go also loads any newer data exports.",
-       action = "Press Go.", nice = "The dashboard has been updated."),
+       body = "The range has moved to the release dates in your year. Narrow it further if you only want part of the season. If years and dates ever stop overlapping, a red warning appears under Go."),
+  list(sel = "#go", place = "right", doit = "click", click = "#go", auto = TRUE, title = "Press Go to apply",
+       body = "Changes in the left panel do nothing until you press <b>Go</b>, so you can set several filters first. If you change something and forget, a red reminder appears under the button.",
+       action = "Press Go.", nice = "Now showing your selection."),
   list(sel = "#side_summary", place = "right", title = "Your selection at a glance",
-       body = "This box sums up the fish in the current selection: how many were released, how many were detected downstream, the farthest checkpoint reached and the median days to Bonneville Dam."),
-  list(sel = "#tabs", place = "bottom", doit = "tab", auto = TRUE, title = "Nine views of the same fish",
-       body = "Each tab shows the current selection a different way, from the big-picture <b>Overview</b> to single-fish <b>Journeys</b>, the <b>Migration</b> map, <b>Survival</b> statistics and field <b>Photos</b>. The first time you open each tab, a short tip explains it.",
-       action = "Open any other tab.", nice = "That is how you move between views."),
-  list(sel = ".st-b[data-pane=settings]", place = "right", doit = "settings", auto = TRUE, title = "Make it yours",
+       body = "This box sums up the selection: fish released, how many were detected downstream, the farthest checkpoint reached and the median days to Bonneville Dam."),
+  list(sel = "#tiles", pre = "Overview", place = "bottom", title = "The Overview",
+       body = "Headline numbers for your selection. Scroll down for releases by year and the season survival funnel: the share of fish detected at each checkpoint on the way to the ocean."),
+  list(sel = "#tabs", place = "bottom", doit = "tab", tab = "Journeys", auto = TRUE, title = "Follow a fish",
+       body = "Each tab shows the same selection a different way. <b>Journeys</b> lists every fish detected downstream of where it was released.",
+       action = "Open the <b>Journeys</b> tab.", nice = "Here are the fish that made it downstream."),
+  list(sel = "#tbl_journeys", place = "top", doit = "row", auto = TRUE, title = "Pick a fish",
+       body = "Each row is one PIT tag: where it was released, the farthest checkpoint it reached and how many days that took.",
+       action = "Click any row to follow that fish.", nice = "Its journey is shown above the table."),
+  list(sel = "#journey_detail", place = "bottom", title = "One fish's journey",
+       body = "Every checkpoint this fish passed, in order, with the date it was detected. One PIT tag tells the story from the Okanagan towards the ocean."),
+  list(sel = "#tabs", place = "bottom", doit = "tab", tab = "Charts", auto = TRUE, title = "Charts",
+       body = "Charts summarise the whole selection: releases, detection rates by checkpoint, travel time and weekly detections.",
+       action = "Open the <b>Charts</b> tab.", nice = "Next, save one of these charts."),
+  list(sel = "#dl_p_rate", place = "right", doit = "click", click = "#dl_p_rate", auto = TRUE, title = "Export a plot",
+       body = "Every chart can be saved as a PNG. Its footer records the population, years, version and time (UTC), so you always know what the file shows.",
+       action = "Press <b>Export plot (PNG)</b> under Detection rate.", nice = "Plot saved to your Downloads folder."),
+  list(sel = "#tabs", place = "bottom", doit = "tab", tab = "Explore", auto = TRUE, title = "Explore the records",
+       body = "<b>Explore</b> shows every tagged fish in the selection as a table you can search and sort.",
+       action = "Open the <b>Explore</b> tab.", nice = "Last export to go."),
+  list(sel = "#dl_fish", place = "right", doit = "click", click = "#dl_fish", auto = TRUE, title = "Export the data",
+       body = "Save exactly what is in the table as a CSV, ready for Excel or R.",
+       action = "Press <b>Export table (CSV)</b>.", nice = "Table saved to your Downloads folder."),
+  list(sel = ".st-b[data-pane=settings]", place = "right", doit = "click", click = ".st-b[data-pane=settings]", auto = TRUE, title = "Make it yours",
        body = "<b>Settings</b> holds the colour themes, Follow the sun (light by day, dark at night in Penticton), the interface font and the screensaver. Choices are saved in this browser only.",
        action = "Switch to Settings.", nice = "Try a theme any time. Filters is one click away."),
-  list(sel = ".ver", place = "left", title = "Beta and version",
-       body = "This site is in <b>beta</b>: features are still being added and numbers can change as new data arrive. The version box shows the current build. All times on the dashboard are UTC."),
+  list(sel = ".ver", place = "left", title = "Beta, version and plain-language help",
+       body = "This site is in <b>beta</b>: numbers can change as new data arrive. All times are UTC. Words with a <span class=gloss-demo>dotted underline</span>, such as p-value or lambda, show a plain-language definition when you hover over them."),
   list(sel = "#tour_btn", place = "left", title = "Need a refresher?",
        body = "Press <b>Tour</b> any time to replay this walk-through."),
   list(center = TRUE, badge = as.character(logo_svg("f")), next_label = "Start exploring", final = TRUE,
        title = "Tutorial complete!",
-       body = "You are ready to follow the sockeye. Pick a population, press Go and explore the tabs. Hover over charts and bars for exact numbers.")
+       body = "You chose a population, followed a fish towards the ocean and exported your first plot and table. Explore freely now, and press Tour any time to replay.")
 )
 TOUR_TIPS <- list(
   Overview = "The big picture for your selection: how many fish were tagged, where they were released, and the season survival funnel showing the share of fish detected at each checkpoint downstream.",
@@ -1577,12 +1656,17 @@ TOUR_JS <- paste0("
 (function(){
   var S = ", jsonlite::toJSON(TOUR_STEPS, auto_unbox = TRUE), ", TIPS = ", jsonlite::toJSON(TOUR_TIPS, auto_unbox = TRUE), ", TV = '", TOUR_VERSION, "';
   var i = 0, done = false, stuck = null, poll = null, root = null, card = null, ring = null, shades = [];
+  var CHECKS = {
+    pop_osoyoos: function(){ var v = $('#pop').val() || []; return v.length === 1 && v[0] === 'OSOYOL'; },
+    one_year: function(){ var v = $('#years').val() || []; return v.length === 1; }
+  };
   function ls(k, v){ try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch(e) { return null; } }
   function q(s){ return document.querySelector(s); }
   function target(st){
     if (!st.sel) return null;
     if (st.sel === 'pop') { var b = q('button[data-id=pop]'); return b ? (b.closest('.bootstrap-select') || b) : null; }
-    return q(st.sel);
+    var el = q(st.sel); if (el && st.sel === '#tbl_journeys') el = el.querySelector('table') || el;
+    return el;
   }
   function holeRect(el){
     var r = el.getBoundingClientRect(), x1 = r.left, y1 = r.top, x2 = r.right, y2 = r.bottom;
@@ -1592,13 +1676,14 @@ TOUR_JS <- paste0("
       if (er.width < 2 || er.height < 2 || getComputedStyle(ex[j]).display === 'none') continue;
       x1 = Math.min(x1, er.left); y1 = Math.min(y1, er.top); x2 = Math.max(x2, er.right); y2 = Math.max(y2, er.bottom);
     }
-    return {l: x1 - 6, t: y1 - 6, r: x2 + 6, b: y2 + 6};
+    return {l: x1 - 6, t: Math.max(y1 - 6, 0), r: x2 + 6, b: Math.min(y2 + 6, window.innerHeight)};
   }
   function box(e, l, t, w, h){ e.style.display = 'block'; e.style.left = l + 'px'; e.style.top = t + 'px'; e.style.width = Math.max(0, w) + 'px'; e.style.height = Math.max(0, h) + 'px'; }
   function layout(){
     if (!root) return;
     var st = S[i], el = target(st), W = window.innerWidth, H = window.innerHeight, k;
-    if (st.center || !el) {
+    if (st.check && !done && CHECKS[st.check] && CHECKS[st.check]()) complete();
+    if (st.center || !el || !el.offsetParent) {
       box(shades[0], 0, 0, W, H); for (k = 1; k < 4; k++) shades[k].style.display = 'none';
       ring.style.display = 'none'; card.classList.add('center'); card.style.left = ''; card.style.top = ''; return;
     }
@@ -1616,15 +1701,22 @@ TOUR_JS <- paste0("
     card.style.left = Math.max(8, Math.min(x, W - cw - 8)) + 'px';
     card.style.top = Math.max(8, Math.min(y, H - ch - 8)) + 'px';
   }
+  function showTab(name){
+    var a = q('#tabs a[data-value=\"' + name + '\"]');
+    if (a && !(a.parentNode && a.parentNode.classList.contains('active'))) $(a).tab('show');
+  }
   function render(){
-    var st = S[i], steps = S.filter(function(s){ return !s.center; }), n = steps.length;
+    var st = S[i], n = S.filter(function(s){ return !s.center; }).length;
     var k = S.slice(0, i + 1).filter(function(s){ return !s.center; }).length, h = '', d;
     done = !st.doit; clearTimeout(stuck);
+    if (st.pre) showTab(st.pre);
+    card.className = 'tour-card' + (st.big ? ' big' : '');
     if (!st.center) {
       h += '<div class=tour-top><span>Step ' + k + ' of ' + n + '</span><span class=tour-dots>';
       for (d = 1; d <= n; d++) h += '<i class=' + (d < k ? 'past' : (d === k ? 'now' : 'todo')) + '></i>';
       h += '</span></div>';
-    } else if (st.badge) h += '<div class=tour-badge>' + st.badge + '</div>' + (st.final ? '<div class=tour-medal>' + n + ' of ' + n + ' steps complete</div>' : '');
+    } else if (st.river) h += '<div class=tour-river>' + st.river + '</div>';
+    else if (st.badge) h += '<div class=tour-badge>' + st.badge + '</div>' + (st.final ? '<div class=tour-medal>' + n + ' of ' + n + ' steps complete</div>' : '');
     h += '<h4>' + st.title + '</h4><div class=tour-body>' + st.body + '</div>';
     if (st.doit) h += '<div class=tour-do id=tour_do><span class=tour-do-ico></span><span><b>Your move:</b> ' + st.action + '</span></div>' +
                       '<a href=# class=tour-stuck id=tour_stuck>Stuck? Continue anyway</a>';
@@ -1634,7 +1726,7 @@ TOUR_JS <- paste0("
     q('#tour_next').onclick = function(){ if (done) go(i + 1); };
     if (q('#tour_back')) q('#tour_back').onclick = function(){ go(i - 1); };
     if (q('#tour_stuck')) q('#tour_stuck').onclick = function(e){ e.preventDefault(); go(i + 1); };
-    var el = target(st); if (el && !st.center && el.scrollIntoView) el.scrollIntoView({block: 'center'});
+    setTimeout(function(){ var el = target(st); if (el && !st.center && el.scrollIntoView) el.scrollIntoView({block: 'center'}); layout(); }, st.pre ? 350 : 0);
     layout(); setTimeout(layout, 80);
     if (st.doit) stuck = setTimeout(function(){ var s = q('#tour_stuck'); if (s) s.style.display = 'inline-block'; }, 30000);
   }
@@ -1643,14 +1735,14 @@ TOUR_JS <- paste0("
     var dd = q('#tour_do'); if (dd) { dd.classList.add('ok'); dd.innerHTML = '<span class=tour-do-ico></span><span><b>Nice!</b> ' + (st.nice || '') + '</span>'; }
     var nb = q('#tour_next'); if (nb) nb.disabled = false;
     var sk = q('#tour_stuck'); if (sk) sk.style.display = 'none';
-    var at = i; if (st.auto) setTimeout(function(){ if (root && i === at) go(i + 1); }, 1400);
+    var at = i; if (st.auto) setTimeout(function(){ if (root && i === at) go(i + 1); }, 1500);
   }
   function go(n){ if (n < 0) return; if (n >= S.length) return finish(); i = n; render(); }
   function finish(){
     ls('sts_tour', TV); clearInterval(poll); clearTimeout(stuck);
+    ['Overview', 'Journeys', 'Charts', 'Explore'].forEach(function(t){ ls('sts_tip_' + t, '1'); });
     if (root) root.parentNode.removeChild(root); root = null; window.__tourActive = false;
     var f = q('.st-b[data-pane=filters]'); if (f) f.click();
-    var a = q('#tabs li.active a'); if (a) setTimeout(function(){ tip(a); }, 300);
   }
   function start(){
     if (root) return;
@@ -1682,14 +1774,15 @@ TOUR_JS <- paste0("
     if (!root || done) return;
     var st = S[i], t = e.target;
     if (!st.doit || !t.closest) return;
-    if (st.doit === 'go' && t.closest('#go')) complete();
-    if (st.doit === 'settings' && t.closest('.st-b[data-pane=settings]')) complete();
-    if (st.doit === 'pop' && t.closest('button[data-id=pop]')) setTimeout(complete, 150);
+    if (st.doit === 'click' && st.click && t.closest(st.click)) complete();
+    if (st.doit === 'row') { var tr = t.closest('#tbl_journeys tbody tr'); if (tr && !tr.querySelector('.dataTables_empty')) setTimeout(complete, 200); }
   }, true);
   window.addEventListener('resize', layout);
   window.addEventListener('scroll', layout, true);
-  $(document).on('shown.bs.tab', function(e){ if (root) { if (S[i].doit === 'tab') complete(); } else tip(e.target); });
-  $(document).on('shown.bs.select', function(){ if (root && S[i].doit === 'pop') complete(); });
+  $(document).on('shown.bs.tab', function(e){
+    if (root) { var st = S[i]; if (st.doit === 'tab' && (!st.tab || e.target.getAttribute('data-value') === st.tab)) complete(); }
+    else tip(e.target);
+  });
   function boot(force){
     var tries = 0;
     (function wait(){
@@ -1701,6 +1794,72 @@ TOUR_JS <- paste0("
     var b = q('#tour_btn'); if (b) b.addEventListener('click', function(){ boot(true); });
     boot(false);
   });
+})();
+")
+
+# Glossary: technical terms on the page get a dotted underline and a plain-language
+# definition on hover (or tap). Applied to the main content after each update.
+GLOSSARY <- list(
+  "p-value" = "How often chance alone would produce a gap at least this large if the groups really did not differ. Under 0.05 usually counts as a real difference.",
+  "Cormack-Jolly-Seber" = "A mark-recapture model that separates survival from the chance of detection, using each fish's sequence of detections at downstream checkpoints.",
+  "lambda" = "Survival through the last reach multiplied by the chance of being detected at the last checkpoint. The two cannot be separated, so lambda is not survival on its own.",
+  "harmonic mean" = "An average that gives less weight to the slowest fish; the usual way PIT-tag studies report travel time.",
+  "arithmetic mean" = "The ordinary average: add up all the values and divide by the number of fish.",
+  "detection probability" = "The chance that a fish passing a checkpoint was actually read by its antennas.",
+  "standard error" = "How uncertain an estimate is. The true value is usually within about two standard errors of the estimate.",
+  "standard deviation" = "How spread out individual fish are around the average.",
+  "Holm-adjusted" = "P-values corrected for making several comparisons at once, so chance differences are not over-counted.",
+  "PIT tag" = "Passive integrated transponder: a rice-sized tag with a unique code, read by antennas as the fish swims past.",
+  "PIT-tagged" = "Carrying a PIT tag: a rice-sized tag with a unique code, read by antennas as the fish swims past.",
+  "Fisher's exact test" = "Tests whether two groups differ in the share of fish detected. Exact, so it works with small numbers.",
+  "chi-squared test" = "Tests whether three or more groups differ in the share of fish detected.",
+  "Wilcoxon rank-sum test" = "Tests whether two groups differ in a measurement such as travel days, without assuming a bell-shaped spread.",
+  "Kruskal-Wallis test" = "The three-or-more-group version of the Wilcoxon rank-sum test.",
+  "z-test" = "Compares two model estimates using their standard errors."
+)
+GLOSS_JS <- paste0("
+(function(){
+  var G = ", jsonlite::toJSON(GLOSSARY, auto_unbox = TRUE), ", keys = Object.keys(G).sort(function(a, b){ return b.length - a.length; });
+  var low = {}; keys.forEach(function(k){ low[k.toLowerCase()] = G[k]; });
+  var re = new RegExp('(^|[^A-Za-z])(' + keys.join('|') + ')(?![A-Za-z])', 'gi');
+  var SKIP = {SCRIPT: 1, STYLE: 1, TEXTAREA: 1, INPUT: 1, SELECT: 1, OPTION: 1, BUTTON: 1, A: 1, svg: 1, SVG: 1};
+  function wrap(node){
+    var txt = node.nodeValue, m, last = 0, frag = null; re.lastIndex = 0;
+    while ((m = re.exec(txt)) !== null) {
+      if (!frag) frag = document.createDocumentFragment();
+      var start = m.index + m[1].length;
+      frag.appendChild(document.createTextNode(txt.slice(last, start)));
+      var s = document.createElement('span'); s.className = 'gloss'; s.setAttribute('data-def', low[m[2].toLowerCase()]); s.textContent = m[2];
+      frag.appendChild(s); last = start + m[2].length;
+    }
+    if (frag) { frag.appendChild(document.createTextNode(txt.slice(last))); node.parentNode.replaceChild(frag, node); }
+  }
+  function scan(){
+    var main = document.querySelector('main'); if (!main) return;
+    var w = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {acceptNode: function(n){
+      for (var p = n.parentNode; p && p !== main; p = p.parentNode) {
+        if (SKIP[p.nodeName] || (p.classList && (p.classList.contains('gloss') || p.classList.contains('leaflet-container')))) return NodeFilter.FILTER_REJECT;
+      }
+      re.lastIndex = 0; return re.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    }});
+    var list = [], n; while ((n = w.nextNode())) list.push(n);
+    list.forEach(wrap);
+  }
+  var t = null; function later(){ clearTimeout(t); t = setTimeout(scan, 300); }
+  var tipEl = null;
+  function show(el){
+    if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'gloss-tip'; document.body.appendChild(tipEl); }
+    tipEl.innerHTML = '<b>' + el.textContent + '</b>: ' + el.getAttribute('data-def'); tipEl.style.display = 'block';
+    var r = el.getBoundingClientRect(), w = tipEl.offsetWidth;
+    tipEl.style.left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - w - 8)) + 'px';
+    tipEl.style.top = (r.bottom + window.scrollY + 6) + 'px';
+  }
+  function hide(){ if (tipEl) tipEl.style.display = 'none'; }
+  document.addEventListener('mouseover', function(e){ var g = e.target.closest && e.target.closest('.gloss'); if (g) show(g); });
+  document.addEventListener('mouseout', function(e){ if (e.target.closest && e.target.closest('.gloss')) hide(); });
+  document.addEventListener('click', function(e){ var g = e.target.closest && e.target.closest('.gloss'); if (g) show(g); else hide(); });
+  $(document).on('shiny:value shown.bs.tab', later);
+  if (window.jQuery) $(function(){ later(); setInterval(scan, 4000); });
 })();
 ")
 
@@ -1741,7 +1900,7 @@ settings_ui <- div(id = "side_settings", style = "display:none;",
 
 ui <- fluidPage(
   useShinyjs(),
-  tags$head(tags$title("Let's Follow the Sockeye (Beta)"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SS_JS)), tags$script(HTML(TOUR_JS)),
+  tags$head(tags$title("Let's Follow the Sockeye (Beta)"), tags$style(HTML(APP_CSS)), tags$script(HTML(SETTINGS_JS)), tags$script(HTML(SS_JS)), tags$script(HTML(TOUR_JS)), tags$script(HTML(GLOSS_JS)),
             tags$script(HTML("$(document).on('shown.bs.tab', function(){ setTimeout(function(){ if ($.fn.dataTable) $.fn.dataTable.tables({visible:true, api:true}).columns.adjust(); }, 60); });"))),
 
   screensaver_ui,
@@ -1974,10 +2133,32 @@ server <- function(input, output, session) {
     s <- sel(); b <- raw(); req(b)
     all_y <- as.character(unique(b$tag$year[!is.na(b$tag$year)]))
     norm  <- function(y) sort(if (length(y) == 0) all_y else as.character(y))
+    hints <- list()
     if (!identical(input$pop, s$pop) || !identical(norm(input$years), norm(s$years)) ||
         !identical(as.character(input$dates), as.character(s$dates)))
-      div(class = "hint", "Selection changed - press Go to apply.")
+      hints <- c(hints, list(div(class = "hint", "Selection changed - press Go to apply.")))
+    # years and dates both apply: warn when no release date in the chosen years falls inside the range
+    dts <- input$dates
+    if (length(dts) == 2 && !any(is.na(dts))) {
+      d <- as.Date(b$tag$reldt_posix)
+      if (length(input$years)) d <- d[b$tag$year %in% as.integer(input$years)]
+      if (!any(d >= as.Date(dts[1]) & d <= as.Date(dts[2]), na.rm = TRUE))
+        hints <- c(hints, list(div(class = "hint", "No fish were released in the selected years within these dates. Widen the dates or change the years.")))
+    }
+    tagList(hints)
   })
+
+  # keep the release-date range in step with the selected years (skips the first
+  # value set when the year box is built, so start-up does not look like a change)
+  years_seen <- reactiveVal(FALSE)
+  observeEvent(input$years, {
+    if (!isolate(years_seen())) { years_seen(TRUE); return() }
+    b <- raw(); req(b)
+    d <- as.Date(b$tag$reldt_posix)
+    if (length(input$years)) d <- d[b$tag$year %in% as.integer(input$years)]
+    d <- d[!is.na(d)]
+    if (length(d)) updateDateRangeInput(session, "dates", start = min(d), end = max(d))
+  }, ignoreNULL = FALSE, ignoreInit = TRUE)
 
   # Reactive: which populations to actually filter by (handles multi-select auto-sync)
   selected_populations <- reactive({
