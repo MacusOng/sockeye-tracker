@@ -10,6 +10,9 @@ How to record a change (in this order):
 
 Entry types: Added, Changed, Fixed, Removed.
 
+## 0.21.0 - 2026-11-10
+- Added: one-click "Summary report" button in the left panel (under the selection summary). It saves a single self-contained HTML file for the current selection: selection, version and UTC time; headline numbers; releases chart; detection-rate chart and table (checkpoints with no detections left out); travel-time chart and mean table; survival and lambda chart and table with survival p-values; population comparisons with their plain-language notes and any "may still be migrating" warning; data exports loaded; and definitions of the terms used. Open it in any browser; Print > Save as PDF gives a PDF. Each section is built independently, so one failing section does not stop the report.
+
 ## 0.20.0 - 2026-11-09
 - Changed: the walk-through is now a worked example that first-time users must complete (17 steps): choose Osoyoos Lake only, keep one release year, press Go, read the Overview, open Journeys and click a fish to follow it, open Charts and export the detection-rate plot (PNG), open Explore and export the table (CSV), then Settings. Selection steps unlock when the selection is right; export steps unlock when the export button is pressed. TOUR_VERSION bumped to 2, so everyone sees the new tour once.
 - Changed: much larger welcome window with an animated river intro (a sockeye swims from the Okanagan past the dams to the Pacific while each checkpoint lights up) and a three-point plan of the example.

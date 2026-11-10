@@ -35,7 +35,7 @@ suppressPackageStartupMessages({
 # 0. VERSION, PATHS, HELPERS
 # =============================================================================
 
-APP_VERSION      <- "0.20.0"
+APP_VERSION      <- "0.21.0"
 APP_TIMEZONE     <- "UTC"                             # all app times are UTC (local time-zone rules unsettled)
 tz_now           <- function(fmt) format(Sys.time(), fmt, tz = APP_TIMEZONE)
 APP_VERSION_DATE <- tz_now("%m %d %Y %H %M %S")
@@ -1238,6 +1238,7 @@ aside.side h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color
 aside.side .form-group{margin-bottom:12px;} aside.side label{font-size:12px;color:var(--muted);font-weight:600;}
 .btn.btn-go{width:100%;background:var(--accent);color:var(--on-accent);border:0;border-radius:10px;font-weight:700;padding:9px;font-size:15px;}
 .btn.btn-go:hover,.btn.btn-go:focus{background:var(--accent2);color:var(--on-accent);}
+.btn-report{margin-top:12px !important;font-weight:600;}
 .btn-soft{width:100%;background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:10px;margin-top:8px;}
 table.dataTable tbody tr.selected>*{box-shadow:inset 0 0 0 9999px rgba(31,122,109,.28) !important;color:var(--ink) !important;}
 .btn-top{margin:0 0 14px !important;}
@@ -1944,7 +1945,9 @@ ui <- fluidPage(
                  div(class = "small-note",
                      "Pick a population, years and dates, then press ", tags$b("Go"),
                      " to apply. Go also checks the data folder for newer exports."),
-                 uiOutput("side_summary")),
+                 uiOutput("side_summary"),
+                 downloadButton("dl_report", "Summary report", icon = icon("file-lines"), class = "btn-soft btn-report"),
+                 div(class = "small-note", style = "margin-top:6px;", "One file with the numbers, charts and p-values for this selection. Open it in a browser; Print > Save as PDF makes a PDF.")),
                  settings_ui),
 
       # ---------------- pages ----------------
@@ -2932,6 +2935,112 @@ server <- function(input, output, session) {
   output$dl_speed <- dl_csv("fish_speed", function() {
     s <- speed_f(); s[, c("pit", "site_full", "from", "to", "km", "days", "pace")]
   })
+
+  # ---------------- Summary report (one-click, self-contained HTML) ----------------
+  # Everything for the current selection in one file: headline numbers, key charts,
+  # survival and travel time, p-values with their plain-language notes, and the
+  # data sources. Open it in any browser; File > Print > Save as PDF gives a PDF.
+  rep_img <- function(p, w = 9, h = 5) {
+    f <- tempfile(fileext = ".png"); on.exit(unlink(f))
+    ggsave(f, p, width = w, height = h, dpi = 110, bg = "white")
+    tags$img(src = paste0("data:image/png;base64,", jsonlite::base64_enc(readBin(f, "raw", file.info(f)$size))))
+  }
+  rep_tbl <- function(d, digits = 3) {
+    if (is.null(d) || !is.data.frame(d) || nrow(d) == 0) return(tags$p(class = "muted", "Nothing to show for this selection."))
+    cells <- lapply(d, function(x) {
+      v <- if (is.numeric(x)) format(round(x, digits), big.mark = ",", trim = TRUE, scientific = FALSE) else as.character(x)
+      v[is.na(x) | v %in% c("NA", "NaN")] <- "-"; v })
+    tags$table(tags$thead(tags$tr(lapply(names(d), tags$th))),
+               tags$tbody(lapply(seq_len(nrow(d)), function(i) tags$tr(lapply(cells, function(v) tags$td(v[i]))))))
+  }
+  rep_safe <- function(expr) tryCatch(expr, error = function(e) tags$p(class = "muted", "This section could not be built for the current selection."))
+  REPORT_CSS <- "
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#1f2a2b;background:#f3efe8;margin:0;}
+.page{max-width:960px;margin:24px auto;background:#fffdf8;border:1px solid #e7e1d5;border-radius:14px;padding:28px 36px;}
+h1{font-size:24px;margin:0;} h2{font-size:18px;margin:28px 0 8px;border-bottom:2px solid #1f7a6d;padding-bottom:4px;}
+h3{font-size:14px;margin:16px 0 6px;}
+.beta{display:inline-block;background:#d4a24c;color:#1f1a0e;font-size:10px;font-weight:800;letter-spacing:.12em;padding:2px 8px;border-radius:999px;vertical-align:middle;margin-left:6px;}
+.meta{color:#6b7776;font-size:12.5px;margin-top:6px;line-height:1.5;}
+.glance{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
+.glance div{background:#efe9dc;border-radius:10px;padding:10px 12px;} .glance b{display:block;font-size:20px;} .glance span{font-size:12px;color:#6b7776;}
+img{width:100%;height:auto;border:1px solid #e7e1d5;border-radius:8px;margin:6px 0;}
+table{border-collapse:collapse;width:100%;font-size:12px;margin:6px 0 10px;} th,td{border-bottom:1px solid #e7e1d5;padding:4px 8px;text-align:left;} th{background:#efe9dc;}
+.note{background:#efe9dc;border-left:4px solid #1f7a6d;border-radius:8px;padding:8px 12px;font-size:13px;line-height:1.5;margin:8px 0;}
+.warn{background:#fbf1dc;border-left:4px solid #d4a24c;border-radius:8px;padding:8px 12px;font-size:13px;line-height:1.5;margin:8px 0;}
+.muted{color:#6b7776;font-size:12.5px;} dl{font-size:12.5px;} dt{font-weight:700;margin-top:6px;} dd{margin:0 0 0 0;color:#333;}
+@media print{body{background:#fff;} .page{border:0;margin:0;max-width:none;padding:0;} h2{break-after:avoid;} img,table,.note,.warn{break-inside:avoid;}}
+"
+  build_report <- function() {
+    b <- raw(); tg <- tags_f(); cp <- cp_f(); s <- sel()
+    when <- tz_now("%Y-%m-%d %H:%M:%S")
+    yr_txt <- if (length(s$years)) paste(sort(s$years), collapse = ", ") else "all years"
+    dt_txt <- if (length(s$dates) == 2) paste(format(s$dates[1]), "to", format(s$dates[2])) else "all dates"
+    head <- div(h1("Let's Follow the Sockeye: summary report", span(class = "beta", "BETA")),
+                div(class = "meta", tags$b("Selection: "), paste0(pop_name(), " | release years: ", yr_txt, " | release dates: ", dt_txt), tags$br(),
+                    paste0("Generated ", when, " UTC | dashboard v", APP_VERSION, " | Okanagan Nation Alliance | prepared by Macus Ong")))
+    if (is.null(b) || nrow(tg) == 0)
+      return(div(class = "page", head, tags$p("There are no fish in this selection. Change the filters, press Go and export again.")))
+    n <- nrow(tg); det <- n_distinct(cp$pit)
+    far <- if (nrow(cp)) max(cp$idx) else NA
+    bon <- merge(cp[cp$idx == match("BON", CHECKPOINTS$cp), , drop = FALSE], tg[, c("pit", "reldt_posix")], by = "pit")
+    med <- if (nrow(bon)) median(as.numeric(difftime(bon$first_det, bon$reldt_posix, units = "days"))) else NA
+    glance <- div(class = "glance",
+      div(tags$b(fmt_int(n)), span("fish tagged and released")),
+      div(tags$b(sprintf("%s (%.1f%%)", fmt_int(det), 100 * det / n)), span("detected downstream")),
+      div(tags$b(length(unique(tg$site_full))), span("release locations")),
+      div(tags$b(if (is.na(far)) "none yet" else CHECKPOINTS$label[far]), span("farthest checkpoint reached")),
+      div(tags$b(if (is.na(med)) "-" else sprintf("%.1f", med)), span("median days to Bonneville Dam")),
+      div(tags$b(paste(range(tg$year, na.rm = TRUE), collapse = " - ")), span("release years in the data")))
+    mig <- rep_safe({ f <- mig_flagged()
+      if (nrow(f)) div(class = "warn", tags$b("May still be migrating: "), paste0(
+        paste(sprintf("%s %d (released %s; data run to %s)", f$site_full, f$year, format(f$released, "%b %d, %Y"), format(f$cutoff, "%b %d, %Y")), collapse = "; "),
+        ". Their low detection rates may reflect timing rather than survival. They are ",
+        if (incl_mig()) "included in" else "left out of", " the p-values below.")) })
+    n_pop_all <- length(unique(tg$site_full))
+    why_none <- if (n_pop_all >= 2) "The selected populations that may still be migrating are left out (see above), so fewer than two remain to compare."
+                else "Only one population is selected. Select two or more and press Go to include comparisons."
+    comp <- rep_safe({
+      if (n_pops_sel() < 2) tags$p(class = "muted", why_none)
+      else { r <- pop_cmp(); tagList(lapply(r, function(x) div(tags$h3(paste0(x$title, " (", fmt_p(x$p), ")")), div(class = "note", pop_blurb(x))))) } })
+    sv <- rep_safe({ x <- surv_cmp()
+      if (length(x)) tagList(lapply(x, function(y) div(tags$h3(paste0("Survival p-values: ", sub("^Survival: ", "", y$parameter))), div(class = "note", surv_blurb(y)))))
+      else tags$p(class = "muted", "No survival comparison: it needs two or more release groups with the same stable survival estimate (groups that may still be migrating are left out).") })
+    used <- GLOSSARY[c("p-value", "lambda", "Cormack-Jolly-Seber", "harmonic mean", "detection probability", "standard error", "Holm-adjusted")]
+    div(class = "page", head,
+        h2("At a glance"), glance,
+        h2("Releases"), rep_safe(rep_img(gg_release_year(tg, FALSE), 9, 4)),
+        h2("Detection at downstream checkpoints"),
+        tags$p(class = "muted", "Share of fish detected at each checkpoint, counting only fish released upstream of it. Detection mixes survival with the chance of being read by the antennas."),
+        rep_safe(rep_img(gg_rate(rate_f(), FALSE))),
+        rep_safe({ rt <- rate_tbl(); if (nrow(rt)) { hit <- tapply(rt[["Fish detected"]], rt$Checkpoint, sum); rt <- rt[rt$Checkpoint %in% names(hit)[hit > 0], , drop = FALSE] }
+                   tagList(rep_tbl(rt, 1), tags$p(class = "muted", "Checkpoints where no fish in this selection were detected are left out of the table.")) }),
+        h2("Travel time"), rep_safe(rep_img(gg_travel(cp, tg, FALSE), 9, 6)),
+        rep_safe(rep_tbl(tt_tbl(), 2)),
+        h2("Survival (Cormack-Jolly-Seber)"),
+        rep_safe(rep_img(gg_surv(surv_long(), FALSE), 9, max(4, plot_rows_height(surv_plot_rows()) / 80))),
+        rep_safe(rep_tbl(surv_tbl(), 3)), sv,
+        h2("Do the selected populations differ?"), mig, comp,
+        h2("Notes"),
+        tags$ul(class = "muted",
+          tags$li("Beta: features are still being added and numbers can change as new data arrive."),
+          tags$li(paste0("Data: PTAGIS PitPro tagging and interrogation exports. Loaded: ",
+                  paste(sprintf("%s (exported %s)", b$datasets$dataset, format(b$datasets$date, "%b %d, %Y")), collapse = "; "), ".")),
+          tags$li("All times are UTC. Release years and release dates both filter the selection."),
+          tags$li("A p-value says whether a gap is likely to be chance; it does not say how big or important the gap is, or what caused it.")),
+        h3("Terms used"),
+        tags$dl(lapply(names(used), function(k) tagList(tags$dt(k), tags$dd(used[[k]])))))
+  }
+  output$dl_report <- downloadHandler(
+    filename = function() sprintf("sockeye_summary_report_v%s_%s.html", APP_VERSION, stamp()),
+    content = function(file) {
+      withProgress(message = "Building the summary report", value = 0.3, {
+        body <- build_report(); incProgress(0.6)
+        writeLines(c("<!DOCTYPE html>", "<html lang=\"en\"><head><meta charset=\"utf-8\">",
+                     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+                     "<title>Sockeye summary report (Beta)</title>", "<style>", REPORT_CSS, "</style></head><body>",
+                     as.character(body), "</body></html>"), file, useBytes = TRUE)
+      })
+    })
 }
 
 shinyApp(ui = ui, server = server)
